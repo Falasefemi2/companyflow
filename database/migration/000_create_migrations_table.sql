@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL UNIQUE,
+  executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
