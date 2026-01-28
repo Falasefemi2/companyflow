@@ -51,7 +51,7 @@ CREATE INDEX idx_employees_email ON employees(company_id, email);
 ALTER TABLE departments 
     ADD COLUMN IF NOT EXISTS hod_id UUID,
     ADD CONSTRAINT fk_departments_hod 
-    FOREIGN KEY (hod_id) REFERENCES employees(id) ON DELETE SET NULL
+    FOREIGN KEY (hod_id) REFERENCES employees(id) ON DELETE SET NULL;
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
