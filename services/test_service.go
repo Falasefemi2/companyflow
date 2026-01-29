@@ -1,4 +1,4 @@
-package repositories
+package services
 
 import (
 	"context"
@@ -8,9 +8,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+
+	"github.com/falasefemi2/companyflowlow/repositories"
 )
 
+// setupTestPool creates a database connection pool for testing
+// It loads from TEST_DATABASE_URL first, then falls back to individual env vars
 func setupTestPool(t *testing.T) *pgxpool.Pool {
+	// Try to load .env from multiple paths (for different working directories)
 	envPaths := []string{
 		".env",
 		"../.env",
@@ -23,8 +28,10 @@ func setupTestPool(t *testing.T) *pgxpool.Pool {
 		}
 	}
 
+	// Try to get TEST_DATABASE_URL first (Neon full URL)
 	connStr := os.Getenv("TEST_DATABASE_URL")
 
+	// If not set, fall back to building from individual variables
 	if connStr == "" {
 		host := os.Getenv("DB_HOST")
 		port := os.Getenv("DB_PORT")
@@ -33,10 +40,12 @@ func setupTestPool(t *testing.T) *pgxpool.Pool {
 		dbName := os.Getenv("DB_NAME")
 		sslMode := os.Getenv("DB_SSLMODE")
 
+		// Validate required variables
 		if host == "" || user == "" || dbName == "" {
 			t.Fatal("missing database configuration. Set TEST_DATABASE_URL or DB_HOST, DB_USER, DB_NAME in .env file")
 		}
 
+		// Set defaults if needed
 		if port == "" {
 			port = "5432"
 		}
@@ -44,17 +53,20 @@ func setupTestPool(t *testing.T) *pgxpool.Pool {
 			sslMode = "require"
 		}
 
+		// Build connection string
 		connStr = fmt.Sprintf(
 			"postgresql://%s:%s@%s:%s/%s?sslmode=%s",
 			user, password, host, port, dbName, sslMode,
 		)
 	}
 
+	// Create connection pool
 	pool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
 		t.Fatalf("failed to create connection pool: %v", err)
 	}
 
+	// Test the connection
 	err = pool.Ping(context.Background())
 	if err != nil {
 		t.Fatalf("failed to connect to database: %v", err)
@@ -63,6 +75,8 @@ func setupTestPool(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
+// setupTestDB returns a database connection pool with automatic cleanup
+// Use this for all service tests to avoid code duplication
 func setupTestDB(t *testing.T) *pgxpool.Pool {
 	pool := setupTestPool(t)
 	t.Cleanup(func() {
@@ -71,65 +85,33 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-func setupEmployeeRepository(t *testing.T) *EmployeeRepository {
+// setupEmployeeService creates an EmployeeService with a test database
+// This is a generic pattern - use similar functions for other services
+func setupEmployeeService(t *testing.T) *EmployeeService {
 	pool := setupTestDB(t)
-	return NewEmployeeRepository(pool)
+	employeeRepo := repositories.NewEmployeeRepository(pool)
+	return NewEmployeeService(employeeRepo)
 }
 
-func setupDepartmentRepository(t *testing.T) *DepartmentRepository {
-	pool := setupTestDB(t)
-	return NewDepartmentRepository(pool)
-}
-
-// setupLevelRepository creates a LevelRepository with test database
-// func setupLevelRepository(t *testing.T) *LevelRepository {
+// Generic service setup helper - demonstrates pattern for other services
+// Example: setupDepartmentService(t *testing.T) *DepartmentService
 // 	pool := setupTestDB(t)
-// 	return NewLevelRepository(pool)
-// }
-//
-// setupDesignationRepository creates a DesignationRepository with test database
-// func setupDesignationRepository(t *testing.T) *DesignationRepository {
-// 	pool := setupTestDB(t)
-// 	return NewDesignationRepository(pool)
-// }
+// 	deptRepo := repositories.NewDepartmentRepository(pool)
+// 	return NewDepartmentService(deptRepo)
 //
 
 // cleanupEmployeeTestData removes test employees by company_id
+// Call at the beginning of tests that need a clean slate
 func cleanupEmployeeTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
 	query := `DELETE FROM employees WHERE company_id = $1`
 	_, err := pool.Exec(ctx, query, companyID)
 	return err
 }
 
-// cleanupDepartmentTestData removes test departments by company_id
-func cleanupDepartmentTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
-	query := `DELETE FROM departments WHERE company_id = $1`
-	_, err := pool.Exec(ctx, query, companyID)
-	return err
-}
-
-// cleanupLevelTestData removes test levels by company_id
-func cleanupLevelTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
-	query := `DELETE FROM levels WHERE company_id = $1`
-	_, err := pool.Exec(ctx, query, companyID)
-	return err
-}
-
-// cleanupDesignationTestData removes test designations by company_id
-func cleanupDesignationTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
-	query := `DELETE FROM designations WHERE company_id = $1`
-	_, err := pool.Exec(ctx, query, companyID)
-	return err
-}
-
-// cleanupByEmailPattern removes test data by email pattern (useful for targeted cleanup)
+// cleanupByEmailPattern removes test data by email pattern
+// Useful for targeted cleanup of specific test runs
 func cleanupByEmailPattern(ctx context.Context, pool *pgxpool.Pool, emailPattern string) error {
 	query := `DELETE FROM employees WHERE email LIKE $1`
 	_, err := pool.Exec(ctx, query, emailPattern)
 	return err
-}
-
-// getTestPool returns the raw pool (use sparingly - prefer setupTestDB)
-func getTestPool(t *testing.T) *pgxpool.Pool {
-	return setupTestDB(t)
 }
