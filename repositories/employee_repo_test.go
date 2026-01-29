@@ -13,16 +13,27 @@ import (
 	"github.com/falasefemi2/companyflowlow/utils"
 )
 
+const (
+	testCompanyID = "550e8400-e29b-41d4-a716-446655440000"
+	testRoleID    = "b2711d17-5b6d-4e9a-98c6-bc654184cd4f"
+)
+
 func TestEmployeeRepository_CreateEmployee(t *testing.T) {
-	repo := setupTestRepository(t)
+	repo := setupEmployeeRepository(t)
+	pool := setupTestDB(t)
 	ctx := context.Background()
 
-	companyID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	roleID := uuid.MustParse("b2711d17-5b6d-4e9a-98c6-bc654184cd4f")
+	companyID := uuid.MustParse(testCompanyID)
+	roleID := uuid.MustParse(testRoleID)
 
+	if err := cleanupEmployeeTestData(ctx, pool, companyID.String()); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+
+	uniqueEmail := fmt.Sprintf("test.employee.%d@example.com", time.Now().UnixNano())
 	employee := &models.Employee{
 		CompanyID:             companyID,
-		Email:                 "test.employee@example.com",
+		Email:                 uniqueEmail,
 		PasswordHash:          "hashed_password",
 		Phone:                 "+1234567890",
 		FirstName:             "Test",
@@ -61,20 +72,20 @@ func TestEmployeeRepository_CreateEmployee(t *testing.T) {
 }
 
 func TestEmployeeRepository_GetEmployeeByID(t *testing.T) {
-	repo := setupTestRepository(t)
+	repo := setupEmployeeRepository(t)
 	ctx := context.Background()
 
-	companyID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	roleID := uuid.MustParse("b2711d17-5b6d-4e9a-98c6-bc654184cd4f")
+	companyID := uuid.MustParse(testCompanyID)
+	roleID := uuid.MustParse(testRoleID)
 
 	employee := &models.Employee{
 		CompanyID:      companyID,
-		Email:          "retrieve@example.com",
+		Email:          fmt.Sprintf("retrieve.%d@example.com", time.Now().UnixNano()),
 		PasswordHash:   "hashed",
 		Phone:          "+1234567890",
 		FirstName:      "Retrieve",
 		LastName:       "Test",
-		EmployeeCode:   "RETRIEVE01",
+		EmployeeCode:   fmt.Sprintf("RETRIEVE%d", time.Now().Unix()),
 		RoleID:         roleID,
 		Status:         "active",
 		EmploymentType: "full_time",
@@ -94,19 +105,28 @@ func TestEmployeeRepository_GetEmployeeByID(t *testing.T) {
 	if result.ID != created.ID {
 		t.Errorf("expected %v, got %v", created.ID, result.ID)
 	}
+
+	if result.Email != created.Email {
+		t.Errorf("expected email %s, got %s", created.Email, result.Email)
+	}
 }
 
 func TestEmployeeRepository_GetEmployeeList(t *testing.T) {
-	repo := setupTestRepository(t)
+	repo := setupEmployeeRepository(t)
+	pool := setupTestDB(t)
 	ctx := context.Background()
 
-	companyID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	roleID := uuid.MustParse("b2711d17-5b6d-4e9a-98c6-bc654184cd4f")
+	companyID := uuid.MustParse(testCompanyID)
+	roleID := uuid.MustParse(testRoleID)
+
+	if err := cleanupEmployeeTestData(ctx, pool, companyID.String()); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
 
 	for i := 1; i <= 5; i++ {
 		_, err := repo.CreateEmployee(ctx, &models.Employee{
 			CompanyID:      companyID,
-			Email:          fmt.Sprintf("list%d@example.com", i),
+			Email:          fmt.Sprintf("list%d.%d@example.com", i, time.Now().UnixNano()),
 			PasswordHash:   "hashed",
 			Phone:          "+1234567890",
 			FirstName:      "Employee",
@@ -148,20 +168,25 @@ func TestEmployeeRepository_GetEmployeeList(t *testing.T) {
 }
 
 func TestEmployeeRepository_GetEmployeeList_FilterStatus(t *testing.T) {
-	repo := setupTestRepository(t)
+	repo := setupEmployeeRepository(t)
+	pool := setupTestDB(t)
 	ctx := context.Background()
 
-	companyID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	roleID := uuid.MustParse("b2711d17-5b6d-4e9a-98c6-bc654184cd4f")
+	companyID := uuid.MustParse(testCompanyID)
+	roleID := uuid.MustParse(testRoleID)
+
+	if err := cleanupEmployeeTestData(ctx, pool, companyID.String()); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
 
 	_, err := repo.CreateEmployee(ctx, &models.Employee{
 		CompanyID:      companyID,
-		Email:          "active@example.com",
+		Email:          fmt.Sprintf("active.%d@example.com", time.Now().UnixNano()),
 		PasswordHash:   "hashed",
 		Phone:          "+1234567890",
 		FirstName:      "Active",
 		LastName:       "User",
-		EmployeeCode:   "ACTIVE01",
+		EmployeeCode:   fmt.Sprintf("ACTIVE%d", time.Now().Unix()),
 		RoleID:         roleID,
 		Status:         "active",
 		EmploymentType: "full_time",
@@ -196,20 +221,20 @@ func TestEmployeeRepository_GetEmployeeList_FilterStatus(t *testing.T) {
 }
 
 func TestEmployeeRepository_DeleteEmployee(t *testing.T) {
-	repo := setupTestRepository(t)
+	repo := setupEmployeeRepository(t)
 	ctx := context.Background()
 
-	companyID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	roleID := uuid.MustParse("b2711d17-5b6d-4e9a-98c6-bc654184cd4f")
+	companyID := uuid.MustParse(testCompanyID)
+	roleID := uuid.MustParse(testRoleID)
 
 	employee, err := repo.CreateEmployee(ctx, &models.Employee{
 		CompanyID:      companyID,
-		Email:          "delete@example.com",
+		Email:          fmt.Sprintf("delete.%d@example.com", time.Now().UnixNano()),
 		PasswordHash:   "hashed",
 		Phone:          "+1234567890",
 		FirstName:      "Delete",
 		LastName:       "Test",
-		EmployeeCode:   "DEL01",
+		EmployeeCode:   fmt.Sprintf("DEL%d", time.Now().Unix()),
 		RoleID:         roleID,
 		Status:         "active",
 		EmploymentType: "full_time",
