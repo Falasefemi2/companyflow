@@ -19,10 +19,15 @@ func TestEmployeeRepository_CreateEmployee(t *testing.T) {
 
 	companyID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	roleID := uuid.MustParse("b2711d17-5b6d-4e9a-98c6-bc654184cd4f")
+	uniqueEmail := fmt.Sprintf("test.employee.%d@example.com", time.Now().UnixNano())
+
+	if err := cleanupEmployeeTestData(ctx, repo.pool, companyID.String()); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
 
 	employee := &models.Employee{
 		CompanyID:             companyID,
-		Email:                 "test.employee@example.com",
+		Email:                 uniqueEmail,
 		PasswordHash:          "hashed_password",
 		Phone:                 "+1234567890",
 		FirstName:             "Test",

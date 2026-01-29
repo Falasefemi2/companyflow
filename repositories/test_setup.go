@@ -88,8 +88,9 @@ func setupTestRepository(t *testing.T) *EmployeeRepository {
 
 // cleanupTestData deletes test employees by email pattern
 // Call this inside your test if you want to clean up specific test data
-func cleanupTestData(ctx context.Context, pool *pgxpool.Pool, emailPattern string) error {
-	query := `DELETE FROM employees WHERE email LIKE $1`
-	_, err := pool.Exec(ctx, query, emailPattern)
+// cleanupEmployeeTestData removes test employees before running a test
+func cleanupEmployeeTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
+	query := `DELETE FROM employees WHERE company_id = $1`
+	_, err := pool.Exec(ctx, query, companyID)
 	return err
 }
