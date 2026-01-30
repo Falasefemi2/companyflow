@@ -82,17 +82,16 @@ func setupDepartmentRepository(t *testing.T) *DepartmentRepository {
 }
 
 // setupLevelRepository creates a LevelRepository with test database
-// func setupLevelRepository(t *testing.T) *LevelRepository {
-// 	pool := setupTestDB(t)
-// 	return NewLevelRepository(pool)
-// }
-//
+func setupLevelRepository(t *testing.T) *LevelRepository {
+	pool := setupTestDB(t)
+	return NewLevelRepository(pool)
+}
+
 // setupDesignationRepository creates a DesignationRepository with test database
-// func setupDesignationRepository(t *testing.T) *DesignationRepository {
-// 	pool := setupTestDB(t)
-// 	return NewDesignationRepository(pool)
-// }
-//
+func setupDesignationRepository(t *testing.T) *DesignationRepository {
+	pool := setupTestDB(t)
+	return NewDesignationRepository(pool)
+}
 
 // cleanupEmployeeTestData removes test employees by company_id
 func cleanupEmployeeTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
