@@ -93,6 +93,12 @@ func setupEmployeeService(t *testing.T) *EmployeeService {
 	return NewEmployeeService(employeeRepo)
 }
 
+func setupCompanyService(t *testing.T) *CompanyService {
+	pool := setupTestDB(t)
+	companyRepo := repositories.NewCompanyRepository(pool)
+	return NewCompanyService(companyRepo)
+}
+
 // Generic service setup helper - demonstrates pattern for other services
 // Example: setupDepartmentService(t *testing.T) *DepartmentService
 // 	pool := setupTestDB(t)
@@ -113,5 +119,12 @@ func cleanupEmployeeTestData(ctx context.Context, pool *pgxpool.Pool, companyID 
 func cleanupByEmailPattern(ctx context.Context, pool *pgxpool.Pool, emailPattern string) error {
 	query := `DELETE FROM employees WHERE email LIKE $1`
 	_, err := pool.Exec(ctx, query, emailPattern)
+	return err
+}
+
+// cleanupCompanyTestData removes test companies by slug pattern
+func cleanupCompanyTestData(ctx context.Context, pool *pgxpool.Pool, slugPattern string) error {
+	query := `DELETE FROM companies WHERE slug LIKE $1`
+	_, err := pool.Exec(ctx, query, slugPattern)
 	return err
 }
