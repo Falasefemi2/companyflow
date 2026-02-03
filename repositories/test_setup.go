@@ -81,6 +81,11 @@ func setupDepartmentRepository(t *testing.T) *DepartmentRepository {
 	return NewDepartmentRepository(pool)
 }
 
+func setupCompanyRepository(t *testing.T) *CompanyRepository {
+	pool := setupTestDB(t)
+	return NewCompanyRepository(pool)
+}
+
 // setupLevelRepository creates a LevelRepository with test database
 func setupLevelRepository(t *testing.T) *LevelRepository {
 	pool := setupTestDB(t)
@@ -104,6 +109,13 @@ func cleanupEmployeeTestData(ctx context.Context, pool *pgxpool.Pool, companyID 
 func cleanupDepartmentTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
 	query := `DELETE FROM departments WHERE company_id = $1`
 	_, err := pool.Exec(ctx, query, companyID)
+	return err
+}
+
+// cleanupCompanyTestData removes test companies by slug pattern
+func cleanupCompanyTestData(ctx context.Context, pool *pgxpool.Pool, slugPattern string) error {
+	query := `DELETE FROM companies WHERE slug LIKE $1`
+	_, err := pool.Exec(ctx, query, slugPattern)
 	return err
 }
 

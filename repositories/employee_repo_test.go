@@ -18,17 +18,80 @@ const (
 	testRoleID    = "b2711d17-5b6d-4e9a-98c6-bc654184cd4f"
 )
 
+func cleanupEmployeeDependencies(t *testing.T, ctx context.Context, poolID string) {
+	t.Helper()
+	pool := setupTestDB(t)
+
+	if err := cleanupEmployeeTestData(ctx, pool, poolID); err != nil {
+		t.Fatalf("cleanup employees failed: %v", err)
+	}
+	if err := cleanupDesignationTestData(ctx, pool, poolID); err != nil {
+		t.Fatalf("cleanup designations failed: %v", err)
+	}
+	if err := cleanupDepartmentTestData(ctx, pool, poolID); err != nil {
+		t.Fatalf("cleanup departments failed: %v", err)
+	}
+	if err := cleanupLevelTestData(ctx, pool, poolID); err != nil {
+		t.Fatalf("cleanup levels failed: %v", err)
+	}
+}
+
+func setupEmployeeDependencies(t *testing.T, ctx context.Context, companyID uuid.UUID) (*uuid.UUID, *uuid.UUID, *uuid.UUID) {
+	t.Helper()
+
+	departmentRepo := setupDepartmentRepository(t)
+	levelRepo := setupLevelRepository(t)
+	designationRepo := setupDesignationRepository(t)
+
+	level, err := levelRepo.CreateLevel(ctx, &models.Level{
+		CompanyID:      companyID,
+		Name:           fmt.Sprintf("Level-%d", time.Now().UnixNano()),
+		HierarchyLevel: 1,
+		MinSalary:      ptrFloat(2000000.00),
+		MaxSalary:      ptrFloat(8000000.00),
+		Description:    "Employee test level",
+	})
+	if err != nil {
+		t.Fatalf("setup failed (create level): %v", err)
+	}
+
+	department, err := departmentRepo.CreateDepartment(ctx, &models.Department{
+		CompanyID:   companyID,
+		Name:        fmt.Sprintf("Department-%d", time.Now().UnixNano()),
+		Code:        "EMP",
+		Description: "Employee test department",
+		CostCenter:  "CC-EMP",
+		Status:      "active",
+	})
+	if err != nil {
+		t.Fatalf("setup failed (create department): %v", err)
+	}
+
+	designation, err := designationRepo.CreateDesignation(ctx, &models.Designation{
+		CompanyID:    companyID,
+		Name:         fmt.Sprintf("Designation-%d", time.Now().UnixNano()),
+		Description:  "Employee test designation",
+		LevelID:      &level.ID,
+		DepartmentID: &department.ID,
+		Status:       "active",
+	})
+	if err != nil {
+		t.Fatalf("setup failed (create designation): %v", err)
+	}
+
+	return &department.ID, &designation.ID, &level.ID
+}
+
 func TestEmployeeRepository_CreateEmployee(t *testing.T) {
 	repo := setupEmployeeRepository(t)
-	pool := setupTestDB(t)
 	ctx := context.Background()
 
 	companyID := uuid.MustParse(testCompanyID)
 	roleID := uuid.MustParse(testRoleID)
 
-	if err := cleanupEmployeeTestData(ctx, pool, companyID.String()); err != nil {
-		t.Fatalf("cleanup failed: %v", err)
-	}
+	cleanupEmployeeDependencies(t, ctx, companyID.String())
+
+	deptID, designationID, levelID := setupEmployeeDependencies(t, ctx, companyID)
 
 	uniqueEmail := fmt.Sprintf("test.employee.%d@example.com", time.Now().UnixNano())
 	employee := &models.Employee{
@@ -39,6 +102,9 @@ func TestEmployeeRepository_CreateEmployee(t *testing.T) {
 		FirstName:             "Test",
 		LastName:              "Employee",
 		EmployeeCode:          "TEST001",
+		DepartmentID:          deptID,
+		DesignationID:         designationID,
+		LevelID:               levelID,
 		RoleID:                roleID,
 		Status:                "active",
 		EmploymentType:        "full_time",
@@ -66,6 +132,18 @@ func TestEmployeeRepository_CreateEmployee(t *testing.T) {
 		t.Errorf("expected email %s, got %s", employee.Email, result.Email)
 	}
 
+	if result.DepartmentID == nil || *result.DepartmentID != *deptID {
+		t.Error("expected DepartmentID to be set")
+	}
+
+	if result.DesignationID == nil || *result.DesignationID != *designationID {
+		t.Error("expected DesignationID to be set")
+	}
+
+	if result.LevelID == nil || *result.LevelID != *levelID {
+		t.Error("expected LevelID to be set")
+	}
+
 	if result.CreatedAt.IsZero() || result.UpdatedAt.IsZero() {
 		t.Error("timestamps not set")
 	}
@@ -78,6 +156,10 @@ func TestEmployeeRepository_GetEmployeeByID(t *testing.T) {
 	companyID := uuid.MustParse(testCompanyID)
 	roleID := uuid.MustParse(testRoleID)
 
+	cleanupEmployeeDependencies(t, ctx, companyID.String())
+
+	deptID, designationID, levelID := setupEmployeeDependencies(t, ctx, companyID)
+
 	employee := &models.Employee{
 		CompanyID:      companyID,
 		Email:          fmt.Sprintf("retrieve.%d@example.com", time.Now().UnixNano()),
@@ -86,6 +168,9 @@ func TestEmployeeRepository_GetEmployeeByID(t *testing.T) {
 		FirstName:      "Retrieve",
 		LastName:       "Test",
 		EmployeeCode:   fmt.Sprintf("RETRIEVE%d", time.Now().Unix()),
+		DepartmentID:   deptID,
+		DesignationID:  designationID,
+		LevelID:        levelID,
 		RoleID:         roleID,
 		Status:         "active",
 		EmploymentType: "full_time",
@@ -109,19 +194,30 @@ func TestEmployeeRepository_GetEmployeeByID(t *testing.T) {
 	if result.Email != created.Email {
 		t.Errorf("expected email %s, got %s", created.Email, result.Email)
 	}
+
+	if result.DepartmentID == nil || *result.DepartmentID != *deptID {
+		t.Error("expected DepartmentID to match")
+	}
+
+	if result.DesignationID == nil || *result.DesignationID != *designationID {
+		t.Error("expected DesignationID to match")
+	}
+
+	if result.LevelID == nil || *result.LevelID != *levelID {
+		t.Error("expected LevelID to match")
+	}
 }
 
 func TestEmployeeRepository_GetEmployeeList(t *testing.T) {
 	repo := setupEmployeeRepository(t)
-	pool := setupTestDB(t)
 	ctx := context.Background()
 
 	companyID := uuid.MustParse(testCompanyID)
 	roleID := uuid.MustParse(testRoleID)
 
-	if err := cleanupEmployeeTestData(ctx, pool, companyID.String()); err != nil {
-		t.Fatalf("cleanup failed: %v", err)
-	}
+	cleanupEmployeeDependencies(t, ctx, companyID.String())
+
+	deptID, designationID, levelID := setupEmployeeDependencies(t, ctx, companyID)
 
 	for i := 1; i <= 5; i++ {
 		_, err := repo.CreateEmployee(ctx, &models.Employee{
@@ -132,6 +228,9 @@ func TestEmployeeRepository_GetEmployeeList(t *testing.T) {
 			FirstName:      "Employee",
 			LastName:       fmt.Sprintf("Test%d", i),
 			EmployeeCode:   fmt.Sprintf("LIST%03d", i),
+			DepartmentID:   deptID,
+			DesignationID:  designationID,
+			LevelID:        levelID,
 			RoleID:         roleID,
 			Status:         "active",
 			EmploymentType: "full_time",
@@ -169,15 +268,14 @@ func TestEmployeeRepository_GetEmployeeList(t *testing.T) {
 
 func TestEmployeeRepository_GetEmployeeList_FilterStatus(t *testing.T) {
 	repo := setupEmployeeRepository(t)
-	pool := setupTestDB(t)
 	ctx := context.Background()
 
 	companyID := uuid.MustParse(testCompanyID)
 	roleID := uuid.MustParse(testRoleID)
 
-	if err := cleanupEmployeeTestData(ctx, pool, companyID.String()); err != nil {
-		t.Fatalf("cleanup failed: %v", err)
-	}
+	cleanupEmployeeDependencies(t, ctx, companyID.String())
+
+	deptID, designationID, levelID := setupEmployeeDependencies(t, ctx, companyID)
 
 	_, err := repo.CreateEmployee(ctx, &models.Employee{
 		CompanyID:      companyID,
@@ -187,6 +285,9 @@ func TestEmployeeRepository_GetEmployeeList_FilterStatus(t *testing.T) {
 		FirstName:      "Active",
 		LastName:       "User",
 		EmployeeCode:   fmt.Sprintf("ACTIVE%d", time.Now().Unix()),
+		DepartmentID:   deptID,
+		DesignationID:  designationID,
+		LevelID:        levelID,
 		RoleID:         roleID,
 		Status:         "active",
 		EmploymentType: "full_time",
@@ -227,6 +328,10 @@ func TestEmployeeRepository_DeleteEmployee(t *testing.T) {
 	companyID := uuid.MustParse(testCompanyID)
 	roleID := uuid.MustParse(testRoleID)
 
+	cleanupEmployeeDependencies(t, ctx, companyID.String())
+
+	deptID, designationID, levelID := setupEmployeeDependencies(t, ctx, companyID)
+
 	employee, err := repo.CreateEmployee(ctx, &models.Employee{
 		CompanyID:      companyID,
 		Email:          fmt.Sprintf("delete.%d@example.com", time.Now().UnixNano()),
@@ -235,6 +340,9 @@ func TestEmployeeRepository_DeleteEmployee(t *testing.T) {
 		FirstName:      "Delete",
 		LastName:       "Test",
 		EmployeeCode:   fmt.Sprintf("DEL%d", time.Now().Unix()),
+		DepartmentID:   deptID,
+		DesignationID:  designationID,
+		LevelID:        levelID,
 		RoleID:         roleID,
 		Status:         "active",
 		EmploymentType: "full_time",
