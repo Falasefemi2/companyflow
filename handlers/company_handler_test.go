@@ -19,11 +19,11 @@ import (
 )
 
 type mockCompanyService struct {
-	createFn   func(ctx context.Context, req *dto.CreateCompanyRequest) (*dto.CompanyResponse, error)
-	getByIDFn  func(ctx context.Context, companyID uuid.UUID) (*dto.CompanyResponse, error)
-	listFn     func(ctx context.Context, req *dto.CompanyListRequest) (*utils.PaginatedResponse[*models.Company], error)
-	updateFn   func(ctx context.Context, companyID uuid.UUID, req *dto.UpdateCompanyRequest) (*dto.CompanyResponse, error)
-	deleteFn   func(ctx context.Context, companyID uuid.UUID, softDelete bool) error
+	createFn  func(ctx context.Context, req *dto.CreateCompanyRequest) (*dto.CompanyResponse, error)
+	getByIDFn func(ctx context.Context, companyID uuid.UUID) (*dto.CompanyResponse, error)
+	listFn    func(ctx context.Context, req *dto.CompanyListRequest) (*utils.PaginatedResponse[*models.Company], error)
+	updateFn  func(ctx context.Context, companyID uuid.UUID, req *dto.UpdateCompanyRequest) (*dto.CompanyResponse, error)
+	deleteFn  func(ctx context.Context, companyID uuid.UUID, softDelete bool) error
 }
 
 func (m *mockCompanyService) CreateCompany(ctx context.Context, req *dto.CreateCompanyRequest) (*dto.CompanyResponse, error) {

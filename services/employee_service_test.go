@@ -46,7 +46,7 @@ func TestEmployeeService_CreateEmployee(t *testing.T) {
 		ProfileImageUrl:       "https://example.com/image.jpg",
 	}
 
-	result, err := service.CreateEmployee(ctx, req)
+	result, err := service.CreateEmployee(ctx, companyID, "Super Admin", req)
 	if err != nil {
 		t.Fatalf("CreateEmployee failed: %v", err)
 	}

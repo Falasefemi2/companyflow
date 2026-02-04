@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 )
 
