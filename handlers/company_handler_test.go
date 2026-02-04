@@ -64,7 +64,16 @@ func TestCompanyHandler_CreateCompany(t *testing.T) {
 
 	handler := NewCompanyHandler(mockService)
 
-	body := `{"name":"Test Company","slug":"test-company"}`
+	body := `{
+		"name":"Test Company",
+		"slug":"test-company",
+		"admin":{
+			"email":"admin@test.com",
+			"password":"password123",
+			"first_name":"Test",
+			"last_name":"Admin"
+		}
+	}`
 	req := httptest.NewRequest(http.MethodPost, "/companies", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 

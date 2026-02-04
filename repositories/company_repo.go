@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/falasefemi2/companyflowlow/dto"
@@ -81,6 +82,176 @@ func (c *CompanyRepository) CreateCompany(ctx context.Context, company *models.C
 		return nil, err
 	}
 
+	return company, nil
+}
+
+func (c *CompanyRepository) CreateCompanyWithAdmin(
+	ctx context.Context,
+	company *models.Company,
+	admin *models.Employee,
+) (*models.Company, error) {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+	}
+
+	tx, err := c.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	companyInsert := `
+		INSERT INTO companies (
+			name, slug, industry, country, timezone, currency,
+			registration_number, tax_id, address, phone, logo_url,
+			status, settings
+		)
+		VALUES (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+		)
+		RETURNING id, name, slug, industry, country, timezone, currency,
+				  registration_number, tax_id, address, phone, logo_url,
+				  status, settings, created_at, updated_at
+	`
+
+	if err := tx.QueryRow(ctx, companyInsert,
+		company.Name,
+		company.Slug,
+		company.Industry,
+		company.Country,
+		company.Timezone,
+		company.Currency,
+		company.RegistrationNumber,
+		company.TaxID,
+		company.Address,
+		company.Phone,
+		company.LogoURL,
+		company.Status,
+		company.Settings,
+	).Scan(
+		&company.ID,
+		&company.Name,
+		&company.Slug,
+		&company.Industry,
+		&company.Country,
+		&company.Timezone,
+		&company.Currency,
+		&company.RegistrationNumber,
+		&company.TaxID,
+		&company.Address,
+		&company.Phone,
+		&company.LogoURL,
+		&company.Status,
+		&company.Settings,
+		&company.CreatedAt,
+		&company.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	if _, err := tx.Exec(ctx, "INSERT INTO tenants (company_id) VALUES ($1)", company.ID); err != nil {
+		return nil, err
+	}
+
+	var superAdminRoleID uuid.UUID
+	if err := tx.QueryRow(
+		ctx,
+		"SELECT id FROM roles WHERE name = $1 AND company_id IS NULL LIMIT 1",
+		"Super Admin",
+	).Scan(&superAdminRoleID); err != nil {
+		return nil, err
+	}
+
+	admin.CompanyID = company.ID
+	admin.RoleID = superAdminRoleID
+	if admin.EmployeeCode == "" {
+		admin.EmployeeCode = "ADMIN-" + company.ID.String()[:8]
+	}
+
+	employeeInsert := `
+		INSERT INTO employees (
+			company_id, email, password_hash, phone, first_name, last_name,
+			employee_code, department_id, designation_id, level_id, manager_id,
+			role_id, status, employment_type, hire_date, date_of_birth, gender,
+			address, emergency_contact_name, emergency_contact_phone, profile_image_url
+		)
+		VALUES (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
+		)
+		RETURNING id, company_id, email, password_hash, phone, first_name, last_name,
+				  employee_code, department_id, designation_id, level_id, manager_id,
+				  role_id, status, employment_type, hire_date, termination_date,
+				  date_of_birth, gender, address, emergency_contact_name,
+				  emergency_contact_phone, profile_image_url, last_login_at,
+				  created_at, updated_at
+	`
+
+	if err := tx.QueryRow(ctx, employeeInsert,
+		admin.CompanyID,
+		admin.Email,
+		admin.PasswordHash,
+		admin.Phone,
+		admin.FirstName,
+		admin.LastName,
+		admin.EmployeeCode,
+		admin.DepartmentID,
+		admin.DesignationID,
+		admin.LevelID,
+		admin.ManagerID,
+		admin.RoleID,
+		admin.Status,
+		admin.EmploymentType,
+		admin.HireDate,
+		admin.DateOfBirth,
+		admin.Gender,
+		admin.Address,
+		admin.EmergencyContactName,
+		admin.EmergencyContactPhone,
+		admin.ProfileImageURL,
+	).Scan(
+		&admin.ID,
+		&admin.CompanyID,
+		&admin.Email,
+		&admin.PasswordHash,
+		&admin.Phone,
+		&admin.FirstName,
+		&admin.LastName,
+		&admin.EmployeeCode,
+		&admin.DepartmentID,
+		&admin.DesignationID,
+		&admin.LevelID,
+		&admin.ManagerID,
+		&admin.RoleID,
+		&admin.Status,
+		&admin.EmploymentType,
+		&admin.HireDate,
+		&admin.TerminationDate,
+		&admin.DateOfBirth,
+		&admin.Gender,
+		&admin.Address,
+		&admin.EmergencyContactName,
+		&admin.EmergencyContactPhone,
+		&admin.ProfileImageURL,
+		&admin.LastLoginAt,
+		&admin.CreatedAt,
+		&admin.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	committed = true
 	return company, nil
 }
 

@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type APIResponse struct {
@@ -63,19 +67,70 @@ func (e *ValidationError) Error() string {
 }
 
 func HashPassword(password string) (string, error) {
-	return "", nil
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashed), nil
 }
 
 func VerifyPassword(hashPassword, plainPassword string) bool {
-	return false
+	return bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(plainPassword)) == nil
 }
 
-func GenerateToken(userID string, expiryHours int) (string, error) {
-	return "", nil
+type AuthClaims struct {
+	Role      string `json:"role"`
+	CompanyID string `json:"company_id"`
+	jwt.RegisteredClaims
 }
 
-func ValidateToken(tokenString string) (string, error) {
-	return "", nil
+func GenerateToken(userID, role, companyID string, expiryHours int) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return "", errors.New("JWT_SECRET is not set")
+	}
+
+	now := time.Now()
+	claims := AuthClaims{
+		Role:      role,
+		CompanyID: companyID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expiryHours) * time.Hour)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+func ValidateToken(tokenString string) (*AuthClaims, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return nil, errors.New("JWT_SECRET is not set")
+	}
+
+	parsed, err := jwt.ParseWithClaims(
+		tokenString,
+		&AuthClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+			return []byte(secret), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := parsed.Claims.(*AuthClaims)
+	if !ok || !parsed.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	return claims, nil
 }
 
 type PaginationParams struct {

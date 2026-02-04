@@ -1,0 +1,2140 @@
+basePath: /
+definitions:
+  dto.CompanyAdminRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  dto.CompanyResponse:
+    properties:
+      address:
+        type: string
+      country:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      industry:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      registration_number:
+        type: string
+      settings:
+        items:
+          type: integer
+        type: array
+      slug:
+        type: string
+      status:
+        type: string
+      tax_id:
+        type: string
+      timezone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.CreateCompanyRequest:
+    properties:
+      address:
+        type: string
+      admin:
+        $ref: '#/definitions/dto.CompanyAdminRequest'
+      country:
+        maxLength: 100
+        type: string
+      currency:
+        maxLength: 10
+        type: string
+      industry:
+        maxLength: 100
+        type: string
+      logo_url:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      phone:
+        maxLength: 100
+        type: string
+      registration_number:
+        maxLength: 100
+        type: string
+      slug:
+        maxLength: 255
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - suspended
+        - inactive
+        type: string
+      tax_id:
+        maxLength: 100
+        type: string
+      timezone:
+        maxLength: 50
+        type: string
+    required:
+    - admin
+    - name
+    - slug
+    type: object
+  dto.CreateDepartmentRequest:
+    properties:
+      code:
+        maxLength: 50
+        type: string
+      cost_center:
+        maxLength: 100
+        type: string
+      description:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      parent_department_id:
+        description: For hierarchical departments
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        type: string
+    required:
+    - name
+    - status
+    type: object
+  dto.CreateDesignationRequest:
+    properties:
+      department_id:
+        type: string
+      description:
+        type: string
+      level_id:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        type: string
+    required:
+    - name
+    - status
+    type: object
+  dto.CreateEmployeeRequest:
+    properties:
+      address:
+        type: string
+      date_of_birth:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+      department_id:
+        type: string
+      designation_id:
+        type: string
+      email:
+        type: string
+      emergency_contact_name:
+        type: string
+      emergency_contact_phone:
+        type: string
+      employee_code:
+        description: Internal ID like EMP001
+        type: string
+      employment_type:
+        enum:
+        - full_time
+        - part_time
+        - contract
+        - intern
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      hire_date:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+      last_name:
+        type: string
+      level_id:
+        type: string
+      manager_id:
+        description: Optional
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        type: string
+      profile_image_url:
+        type: string
+      role_id:
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - on_leave
+        - terminated
+        - probation
+        type: string
+    required:
+    - date_of_birth
+    - department_id
+    - designation_id
+    - email
+    - employee_code
+    - employment_type
+    - first_name
+    - hire_date
+    - last_name
+    - level_id
+    - password
+    - phone
+    - role_id
+    - status
+    type: object
+  dto.CreateLevelRequest:
+    properties:
+      description:
+        type: string
+      hierarchy_level:
+        minimum: 1
+        type: integer
+      max_salary:
+        minimum: 0
+        type: number
+      min_salary:
+        minimum: 0
+        type: number
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - hierarchy_level
+    - name
+    type: object
+  dto.DepartmentResponse:
+    properties:
+      code:
+        type: string
+      company_id:
+        type: string
+      cost_center:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      parent_department_id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.DesignationResponse:
+    properties:
+      company_id:
+        type: string
+      created_at:
+        type: string
+      department_id:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      level_id:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.EmployeeResponse:
+    properties:
+      address:
+        type: string
+      company_id:
+        type: string
+      created_at:
+        type: string
+      date_of_birth:
+        type: string
+      department_id:
+        type: string
+      designation_id:
+        type: string
+      email:
+        type: string
+      emergency_contact_name:
+        type: string
+      emergency_contact_phone:
+        type: string
+      employee_code:
+        type: string
+      employment_type:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      hire_date:
+        type: string
+      id:
+        type: string
+      last_login_at:
+        type: string
+      last_name:
+        type: string
+      level_id:
+        type: string
+      manager_id:
+        type: string
+      phone:
+        type: string
+      profile_image_url:
+        type: string
+      role_id:
+        type: string
+      status:
+        type: string
+      termination_date:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.LevelResponse:
+    properties:
+      company_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      hierarchy_level:
+        type: integer
+      id:
+        type: string
+      max_salary:
+        type: number
+      min_salary:
+        type: number
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  dto.UpdateCompanyRequest:
+    properties:
+      address:
+        type: string
+      country:
+        maxLength: 100
+        type: string
+      currency:
+        maxLength: 10
+        type: string
+      industry:
+        maxLength: 100
+        type: string
+      logo_url:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      phone:
+        maxLength: 100
+        type: string
+      registration_number:
+        maxLength: 100
+        type: string
+      slug:
+        maxLength: 255
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - suspended
+        - inactive
+        type: string
+      tax_id:
+        maxLength: 100
+        type: string
+      timezone:
+        maxLength: 50
+        type: string
+    type: object
+  dto.UpdateDepartmentRequest:
+    properties:
+      code:
+        maxLength: 50
+        type: string
+      cost_center:
+        maxLength: 100
+        type: string
+      description:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      parent_department_id:
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        type: string
+    type: object
+  dto.UpdateDesignationRequest:
+    properties:
+      department_id:
+        type: string
+      description:
+        type: string
+      level_id:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        type: string
+    type: object
+  dto.UpdateEmployeeRequest:
+    properties:
+      address:
+        type: string
+      date_of_birth:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+      department_id:
+        type: string
+      designation_id:
+        type: string
+      emergency_contact_name:
+        type: string
+      emergency_contact_phone:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      last_name:
+        type: string
+      level_id:
+        type: string
+      manager_id:
+        type: string
+      phone:
+        type: string
+      profile_image_url:
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - on_leave
+        - terminated
+        - probation
+        type: string
+      termination_date:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+    type: object
+  dto.UpdateLevelRequest:
+    properties:
+      description:
+        type: string
+      hierarchy_level:
+        minimum: 1
+        type: integer
+      max_salary:
+        minimum: 0
+        type: number
+      min_salary:
+        minimum: 0
+        type: number
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+    type: object
+  handlers.PaginatedCompanyResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Company'
+        type: array
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  handlers.PaginatedDepartmentResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Department'
+        type: array
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  handlers.PaginatedDesignationResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Designation'
+        type: array
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  handlers.PaginatedEmployeeResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Employee'
+        type: array
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  handlers.PaginatedLevelResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Level'
+        type: array
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.Company:
+    properties:
+      address:
+        type: string
+      country:
+        type: string
+      createdAt:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      industry:
+        type: string
+      logoURL:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      registrationNumber:
+        type: string
+      settings:
+        items:
+          type: integer
+        type: array
+      slug:
+        type: string
+      status:
+        type: string
+      taxID:
+        type: string
+      timezone:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Department:
+    properties:
+      code:
+        type: string
+      companyID:
+        type: string
+      costCenter:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      parentDepartmentID:
+        type: string
+      status:
+        description: active, inactive
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Designation:
+    properties:
+      companyID:
+        type: string
+      createdAt:
+        type: string
+      departmentID:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      levelID:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Employee:
+    properties:
+      address:
+        type: string
+      companyID:
+        type: string
+      createdAt:
+        type: string
+      dateOfBirth:
+        type: string
+      departmentID:
+        type: string
+      designationID:
+        type: string
+      email:
+        type: string
+      emergencyContactName:
+        type: string
+      emergencyContactPhone:
+        type: string
+      employeeCode:
+        type: string
+      employmentType:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: string
+      hireDate:
+        type: string
+      id:
+        type: string
+      lastLoginAt:
+        type: string
+      lastName:
+        type: string
+      levelID:
+        type: string
+      managerID:
+        type: string
+      passwordHash:
+        type: string
+      phone:
+        type: string
+      profileImageURL:
+        type: string
+      roleID:
+        type: string
+      status:
+        type: string
+      terminationDate:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Level:
+    properties:
+      companyID:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      hierarchyLevel:
+        description: 1, 2, 3, etc. for ordering
+        type: integer
+      id:
+        type: string
+      maxSalary:
+        type: number
+      minSalary:
+        type: number
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  utils.APIResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: API documentation for CompanyFlow services.
+  title: CompanyFlow API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token.
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Login
+      tags:
+      - auth
+  /companies:
+    get:
+      description: Get paginated list of companies.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Company status
+        in: query
+        name: status
+        type: string
+      - description: Search by name or slug
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PaginatedCompanyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: List companies
+      tags:
+      - companies
+    post:
+      consumes:
+      - application/json
+      description: Create a new company.
+      parameters:
+      - description: Create company payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCompanyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CompanyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Create company
+      tags:
+      - companies
+  /companies/{company_id}/departments:
+    get:
+      description: Get paginated list of departments.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Department status
+        in: query
+        name: status
+        type: string
+      - description: Search by name or code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PaginatedDepartmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List departments
+      tags:
+      - departments
+    post:
+      consumes:
+      - application/json
+      description: Create a new department.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Create department payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateDepartmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DepartmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create department
+      tags:
+      - departments
+  /companies/{company_id}/designations:
+    get:
+      description: Get paginated list of designations.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Designation status
+        in: query
+        name: status
+        type: string
+      - description: Department ID
+        in: query
+        name: department_id
+        type: string
+      - description: Level ID
+        in: query
+        name: level_id
+        type: string
+      - description: Search by title or code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PaginatedDesignationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List designations
+      tags:
+      - designations
+    post:
+      consumes:
+      - application/json
+      description: Create a new designation.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Create designation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateDesignationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DesignationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create designation
+      tags:
+      - designations
+  /companies/{company_id}/employees:
+    get:
+      description: Get paginated list of employees.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Employee status
+        in: query
+        name: status
+        type: string
+      - description: Department ID
+        in: query
+        name: department_id
+        type: string
+      - description: Manager ID
+        in: query
+        name: manager_id
+        type: string
+      - description: Employment type
+        in: query
+        name: employment_type
+        type: string
+      - description: Search by name or email
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PaginatedEmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Create a new employee.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Create employee payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create employee
+      tags:
+      - employees
+  /companies/{company_id}/levels:
+    get:
+      description: Get paginated list of levels.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search by name or code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PaginatedLevelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List levels
+      tags:
+      - levels
+    post:
+      consumes:
+      - application/json
+      description: Create a new level.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Create level payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateLevelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LevelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create level
+      tags:
+      - levels
+  /companies/{id}:
+    delete:
+      description: Delete a company by ID (soft delete unless hard_delete=true).
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Hard delete
+        in: query
+        name: hard_delete
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Delete company
+      tags:
+      - companies
+    get:
+      description: Retrieve a company by ID.
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CompanyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get company by ID
+      tags:
+      - companies
+    patch:
+      consumes:
+      - application/json
+      description: Update a company by ID.
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update company payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCompanyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CompanyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Update company
+      tags:
+      - companies
+    put:
+      consumes:
+      - application/json
+      description: Update a company by ID.
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update company payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCompanyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CompanyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Update company
+      tags:
+      - companies
+  /departments/{id}:
+    delete:
+      description: Delete a department by ID (soft delete unless hard_delete=true).
+      parameters:
+      - description: Department ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Hard delete
+        in: query
+        name: hard_delete
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete department
+      tags:
+      - departments
+    get:
+      description: Retrieve a department by ID.
+      parameters:
+      - description: Department ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DepartmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get department by ID
+      tags:
+      - departments
+    patch:
+      consumes:
+      - application/json
+      description: Update a department by ID.
+      parameters:
+      - description: Department ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update department payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDepartmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DepartmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update department
+      tags:
+      - departments
+    put:
+      consumes:
+      - application/json
+      description: Update a department by ID.
+      parameters:
+      - description: Department ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update department payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDepartmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DepartmentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update department
+      tags:
+      - departments
+  /designations/{id}:
+    delete:
+      description: Delete a designation by ID.
+      parameters:
+      - description: Designation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete designation
+      tags:
+      - designations
+    get:
+      description: Retrieve a designation by ID.
+      parameters:
+      - description: Designation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DesignationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get designation by ID
+      tags:
+      - designations
+    patch:
+      consumes:
+      - application/json
+      description: Update a designation by ID.
+      parameters:
+      - description: Designation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update designation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDesignationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DesignationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update designation
+      tags:
+      - designations
+    put:
+      consumes:
+      - application/json
+      description: Update a designation by ID.
+      parameters:
+      - description: Designation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update designation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDesignationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.DesignationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update designation
+      tags:
+      - designations
+  /employees/{id}:
+    delete:
+      description: Delete an employee by ID (soft delete unless hard_delete=true).
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Hard delete
+        in: query
+        name: hard_delete
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete employee
+      tags:
+      - employees
+    get:
+      description: Retrieve an employee by ID.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
+      tags:
+      - employees
+    patch:
+      consumes:
+      - application/json
+      description: Update an employee by ID.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update employee payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update employee
+      tags:
+      - employees
+    put:
+      consumes:
+      - application/json
+      description: Update an employee by ID.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update employee payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmployeeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update employee
+      tags:
+      - employees
+  /levels/{id}:
+    delete:
+      description: Delete a level by ID.
+      parameters:
+      - description: Level ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete level
+      tags:
+      - levels
+    get:
+      description: Retrieve a level by ID.
+      parameters:
+      - description: Level ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LevelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get level by ID
+      tags:
+      - levels
+    patch:
+      consumes:
+      - application/json
+      description: Update a level by ID.
+      parameters:
+      - description: Level ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update level payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateLevelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LevelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update level
+      tags:
+      - levels
+    put:
+      consumes:
+      - application/json
+      description: Update a level by ID.
+      parameters:
+      - description: Level ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update level payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateLevelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LevelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update level
+      tags:
+      - levels
+securityDefinitions:
+  BearerAuth:
+    description: 'Provide a valid JWT token as: "Bearer <token>"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -32,6 +33,27 @@ func NewCompanyService(companyRepo *repositories.CompanyRepository) *CompanyServ
 func (cs *CompanyService) CreateCompany(ctx context.Context, req *dto.CreateCompanyRequest) (*dto.CompanyResponse, error) {
 	if req == nil {
 		return nil, nil
+	}
+
+	if req.Admin == nil {
+		return nil, &utils.ValidationError{
+			Field:   "admin",
+			Message: "admin details are required",
+		}
+	}
+
+	if req.Admin.Email == "" || req.Admin.Password == "" || req.Admin.FirstName == "" || req.Admin.LastName == "" {
+		return nil, &utils.ValidationError{
+			Field:   "admin",
+			Message: "admin email, password, first_name, and last_name are required",
+		}
+	}
+
+	if !utils.IsValidEmail(req.Admin.Email) {
+		return nil, &utils.ValidationError{
+			Field:   "admin.email",
+			Message: "admin email is invalid",
+		}
 	}
 
 	status := req.Status
@@ -65,7 +87,23 @@ func (cs *CompanyService) CreateCompany(ctx context.Context, req *dto.CreateComp
 		Settings:           []byte(`{}`),
 	}
 
-	created, err := cs.companyRepo.CreateCompany(ctx, company)
+	hashedPassword, err := utils.HashPassword(req.Admin.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	admin := &models.Employee{
+		Email:          req.Admin.Email,
+		PasswordHash:   hashedPassword,
+		Phone:          req.Admin.Phone,
+		FirstName:      req.Admin.FirstName,
+		LastName:       req.Admin.LastName,
+		Status:         "active",
+		EmploymentType: "full_time",
+		HireDate:       time.Now().UTC(),
+	}
+
+	created, err := cs.companyRepo.CreateCompanyWithAdmin(ctx, company, admin)
 	if err != nil {
 		return nil, err
 	}
