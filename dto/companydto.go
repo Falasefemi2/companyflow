@@ -7,18 +7,18 @@ import (
 )
 
 type CreateCompanyRequest struct {
-	Name               string `json:"name" validate:"required,min=2,max=255"`
-	Slug               string `json:"slug" validate:"required,min=2,max=255"`
-	Industry           string `json:"industry" validate:"omitempty,max=100"`
-	Country            string `json:"country" validate:"omitempty,max=100"`
-	Timezone           string `json:"timezone" validate:"omitempty,max=50"`
-	Currency           string `json:"currency" validate:"omitempty,max=10"`
-	RegistrationNumber string `json:"registration_number" validate:"omitempty,max=100"`
-	TaxID              string `json:"tax_id" validate:"omitempty,max=100"`
-	Address            string `json:"address" validate:"omitempty"`
-	Phone              string `json:"phone" validate:"omitempty,max=100"`
-	LogoURL            string `json:"logo_url" validate:"omitempty"`
-	Status             string `json:"status" validate:"omitempty,oneof=active suspended inactive"`
+	Name               string               `json:"name" validate:"required,min=2,max=255"`
+	Slug               string               `json:"slug" validate:"required,min=2,max=255"`
+	Industry           string               `json:"industry" validate:"omitempty,max=100"`
+	Country            string               `json:"country" validate:"omitempty,max=100"`
+	Timezone           string               `json:"timezone" validate:"omitempty,max=50"`
+	Currency           string               `json:"currency" validate:"omitempty,max=10"`
+	RegistrationNumber string               `json:"registration_number" validate:"omitempty,max=100"`
+	TaxID              string               `json:"tax_id" validate:"omitempty,max=100"`
+	Address            string               `json:"address" validate:"omitempty"`
+	Phone              string               `json:"phone" validate:"omitempty,max=100"`
+	LogoURL            string               `json:"logo_url" validate:"omitempty"`
+	Status             string               `json:"status" validate:"omitempty,oneof=active suspended inactive"`
 	Admin              *CompanyAdminRequest `json:"admin" validate:"required"`
 }
 

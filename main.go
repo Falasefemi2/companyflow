@@ -39,6 +39,27 @@ func main() {
 
 	router := mux.NewRouter()
 
+	// CORS Middleware
+	corsMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+	router.Use(corsMiddleware)
+	// Explicit OPTIONS handler so preflight requests don't get a 405 from mux.
+	router.PathPrefix("/").Methods(http.MethodOptions).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	companyRepo := repositories.NewCompanyRepository(pool)
 	companyService := services.NewCompanyService(companyRepo)
 	companyHandler := handlers.NewCompanyHandler(companyService)
@@ -72,7 +93,7 @@ func main() {
 
 	port := ":8080"
 	fmt.Printf("\n✓ Server starting on http://localhost%s\n", port)
-	fmt.Println("Press Ctrl+C to stop the server\n")
+	fmt.Println("Press Ctrl+C to stop the server")
 
 	if err := http.ListenAndServe(port, router); err != nil {
 		log.Fatalf("Server error: %v", err)
