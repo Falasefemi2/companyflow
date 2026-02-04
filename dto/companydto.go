@@ -19,6 +19,15 @@ type CreateCompanyRequest struct {
 	Phone              string `json:"phone" validate:"omitempty,max=100"`
 	LogoURL            string `json:"logo_url" validate:"omitempty"`
 	Status             string `json:"status" validate:"omitempty,oneof=active suspended inactive"`
+	Admin              *CompanyAdminRequest `json:"admin" validate:"required"`
+}
+
+type CompanyAdminRequest struct {
+	Email     string `json:"email" validate:"required,email"`
+	Password  string `json:"password" validate:"required,min=8"`
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name" validate:"required"`
+	Phone     string `json:"phone" validate:"omitempty"`
 }
 
 type UpdateCompanyRequest struct {
