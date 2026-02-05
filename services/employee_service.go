@@ -153,7 +153,7 @@ func (es *EmployeeService) CreateEmployee(
 		return nil, err
 	}
 
-	return toEmployeeResponse(created), nil
+	return ToEmployeeResponse(created), nil
 }
 
 func (es *EmployeeService) GetEmployeeByID(ctx context.Context, employeeID uuid.UUID) (*dto.EmployeeResponse, error) {
@@ -161,7 +161,7 @@ func (es *EmployeeService) GetEmployeeByID(ctx context.Context, employeeID uuid.
 	if err != nil {
 		return nil, err
 	}
-	return toEmployeeResponse(employee), nil
+	return ToEmployeeResponse(employee), nil
 }
 
 func (es *EmployeeService) GetEmployeeList(
@@ -300,14 +300,14 @@ func (es *EmployeeService) UpdateEmployee(
 		return nil, err
 	}
 
-	return toEmployeeResponse(updated), nil
+	return ToEmployeeResponse(updated), nil
 }
 
 func (es *EmployeeService) DeleteEmployee(ctx context.Context, employeeID string, hardDelete bool) error {
 	return es.employeeRepo.DeleteEmployee(ctx, employeeID, hardDelete)
 }
 
-func toEmployeeResponse(employee *models.Employee) *dto.EmployeeResponse {
+func ToEmployeeResponse(employee *models.Employee) *dto.EmployeeResponse {
 	if employee == nil {
 		return nil
 	}

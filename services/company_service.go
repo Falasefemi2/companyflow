@@ -108,7 +108,7 @@ func (cs *CompanyService) CreateCompany(ctx context.Context, req *dto.CreateComp
 		return nil, err
 	}
 
-	return toCompanyResponse(created), nil
+	return ToCompanyResponse(created), nil
 }
 
 func (cs *CompanyService) GetCompanyByID(ctx context.Context, companyID uuid.UUID) (*dto.CompanyResponse, error) {
@@ -117,7 +117,7 @@ func (cs *CompanyService) GetCompanyByID(ctx context.Context, companyID uuid.UUI
 		return nil, err
 	}
 
-	return toCompanyResponse(company), nil
+	return ToCompanyResponse(company), nil
 }
 
 func (cs *CompanyService) GetCompanyList(
@@ -176,14 +176,14 @@ func (cs *CompanyService) UpdateCompany(ctx context.Context, companyID uuid.UUID
 		return nil, err
 	}
 
-	return toCompanyResponse(updated), nil
+	return ToCompanyResponse(updated), nil
 }
 
 func (cs *CompanyService) DeleteCompany(ctx context.Context, companyID uuid.UUID, softDelete bool) error {
 	return cs.companyRepo.DeleteCompany(ctx, companyID, softDelete)
 }
 
-func toCompanyResponse(company *models.Company) *dto.CompanyResponse {
+func ToCompanyResponse(company *models.Company) *dto.CompanyResponse {
 	if company == nil {
 		return nil
 	}
