@@ -2762,6 +2762,15 @@ const docTemplate = `{
         "dto.LoginResponse": {
             "type": "object",
             "properties": {
+                "company": {
+                    "$ref": "#/definitions/dto.CompanyResponse"
+                },
+                "employee": {
+                    "$ref": "#/definitions/dto.EmployeeResponse"
+                },
+                "role": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 }

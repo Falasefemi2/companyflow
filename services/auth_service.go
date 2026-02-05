@@ -10,44 +10,66 @@ import (
 )
 
 type IAuthService interface {
-	Login(ctx context.Context, req *dto.LoginRequest) (string, error)
+	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 }
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type AuthService struct {
 	employeeRepo *repositories.EmployeeRepository
+	companyRepo  *repositories.CompanyRepository
 }
 
-func NewAuthService(employeeRepo *repositories.EmployeeRepository) *AuthService {
-	return &AuthService{employeeRepo: employeeRepo}
+func NewAuthService(
+	employeeRepo *repositories.EmployeeRepository,
+	companyRepo *repositories.CompanyRepository,
+) *AuthService {
+	return &AuthService{
+		employeeRepo: employeeRepo,
+		companyRepo:  companyRepo,
+	}
 }
 
-func (as *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (string, error) {
+func (as *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	if req == nil {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
 	if req.Email == "" || req.Password == "" {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
 	employee, roleName, err := as.employeeRepo.GetEmployeeWithRoleByEmail(ctx, req.Email)
 	if err != nil {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
 	if roleName != "Super Admin" && roleName != "HR Manager" {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
 	if employee.Status != "active" {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
 	if !utils.VerifyPassword(employee.PasswordHash, req.Password) {
-		return "", ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
-	return utils.GenerateToken(employee.ID.String(), roleName, employee.CompanyID.String(), 24)
+	token, err := utils.GenerateToken(employee.ID.String(), roleName, employee.CompanyID.String(), 24)
+	if err != nil {
+		return nil, err
+	}
+
+	company, err := as.companyRepo.GetCompanyByID(ctx, employee.CompanyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.LoginResponse{
+		Token:    token,
+		Role:     roleName,
+		Employee: ToEmployeeResponse(employee),
+		Company:  ToCompanyResponse(company),
+	}, nil
 }

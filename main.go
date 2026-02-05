@@ -85,7 +85,7 @@ func main() {
 	levelHandler := handlers.NewLevelHandler(levelService)
 	levelHandler.RegisterRoutes(router)
 
-	authService := services.NewAuthService(employeeRepo)
+	authService := services.NewAuthService(employeeRepo, companyRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	authHandler.RegisterRoutes(router)
 

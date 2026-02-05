@@ -42,7 +42,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.authService.Login(r.Context(), &req)
+	loginResponse, err := h.authService.Login(r.Context(), &req)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidCredentials) {
 			utils.RespondWithError(w, http.StatusUnauthorized, "invalid credentials")
@@ -54,8 +54,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	utils.RespondWithJSON(w, http.StatusOK, utils.APIResponse{
 		Success: true,
-		Data: map[string]string{
-			"token": token,
-		},
+		Data:    loginResponse,
 	})
 }

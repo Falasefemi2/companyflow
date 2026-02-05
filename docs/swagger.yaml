@@ -376,6 +376,12 @@ definitions:
     type: object
   dto.LoginResponse:
     properties:
+      company:
+        $ref: '#/definitions/dto.CompanyResponse'
+      employee:
+        $ref: '#/definitions/dto.EmployeeResponse'
+      role:
+        type: string
       token:
         type: string
     type: object
