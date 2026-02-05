@@ -98,6 +98,11 @@ func setupDesignationRepository(t *testing.T) *DesignationRepository {
 	return NewDesignationRepository(pool)
 }
 
+func setupRoleRepository(t *testing.T) *RoleRepository {
+	pool := setupTestDB(t)
+	return NewRoleRepository(pool)
+}
+
 // cleanupEmployeeTestData removes test employees by company_id
 func cleanupEmployeeTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
 	query := `DELETE FROM employees WHERE company_id = $1`
@@ -129,6 +134,12 @@ func cleanupLevelTestData(ctx context.Context, pool *pgxpool.Pool, companyID str
 // cleanupDesignationTestData removes test designations by company_id
 func cleanupDesignationTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
 	query := `DELETE FROM designations WHERE company_id = $1`
+	_, err := pool.Exec(ctx, query, companyID)
+	return err
+}
+
+func cleanupRoleTestData(ctx context.Context, pool *pgxpool.Pool, companyID string) error {
+	query := `DELETE FROM roles WHERE company_id = $1`
 	_, err := pool.Exec(ctx, query, companyID)
 	return err
 }
