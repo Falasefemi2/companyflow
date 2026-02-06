@@ -85,6 +85,11 @@ func main() {
 	levelHandler := handlers.NewLevelHandler(levelService)
 	levelHandler.RegisterRoutes(router)
 
+	roleRepo := repositories.NewRoleRepository(pool)
+	roleService := services.NewRoleService(roleRepo)
+	roleHandler := handlers.NewRoleHandler(roleService)
+	roleHandler.RegisterRoutes(router)
+
 	authService := services.NewAuthService(employeeRepo, companyRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	authHandler.RegisterRoutes(router)

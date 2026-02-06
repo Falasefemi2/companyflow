@@ -51,3 +51,13 @@ type PaginatedLevelResponse struct {
 	HasNext    bool           `json:"has_next"`
 	HasPrev    bool           `json:"has_prev"`
 }
+
+type PaginatedRoleResponse struct {
+	Data       []models.Role `json:"data"`
+	Total      int64         `json:"total"`
+	Page       int           `json:"page"`
+	PageSize   int           `json:"page_size"`
+	TotalPages int           `json:"total_pages"`
+	HasNext    bool          `json:"has_next"`
+	HasPrev    bool          `json:"has_prev"`
+}
