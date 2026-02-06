@@ -246,6 +246,21 @@ definitions:
     - hierarchy_level
     - name
     type: object
+  dto.CreateRoleRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      permissions_cache:
+        items:
+          type: string
+        type: array
+    required:
+    - name
+    type: object
   dto.DepartmentResponse:
     properties:
       code:
@@ -383,6 +398,27 @@ definitions:
       role:
         type: string
       token:
+        type: string
+    type: object
+  dto.RoleResponse:
+    properties:
+      company_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_system_role:
+        type: boolean
+      name:
+        type: string
+      permissions_cache:
+        items:
+          type: string
+        type: array
+      updated_at:
         type: string
     type: object
   dto.UpdateCompanyRequest:
@@ -526,6 +562,19 @@ definitions:
         minLength: 2
         type: string
     type: object
+  dto.UpdateRoleRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      permissions_cache:
+        items:
+          type: string
+        type: array
+    type: object
   handlers.PaginatedCompanyResponse:
     properties:
       data:
@@ -607,6 +656,25 @@ definitions:
       data:
         items:
           $ref: '#/definitions/models.Level'
+        type: array
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  handlers.PaginatedRoleResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Role'
         type: array
       has_next:
         type: boolean
@@ -777,6 +845,27 @@ definitions:
         type: number
       name:
         type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Role:
+    properties:
+      companyID:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      isSystemRole:
+        type: boolean
+      name:
+        type: string
+      permissionsCache:
+        items:
+          type: string
+        type: array
       updatedAt:
         type: string
     type: object
@@ -1324,6 +1413,101 @@ paths:
       summary: Create level
       tags:
       - levels
+  /companies/{company_id}/roles:
+    get:
+      description: Get paginated list of roles.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PaginatedRoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List roles
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      description: Create a new role.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Create role payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create role
+      tags:
+      - roles
   /companies/{id}:
     delete:
       description: Delete a company by ID (soft delete unless hard_delete=true).
@@ -2137,6 +2321,171 @@ paths:
       summary: Update level
       tags:
       - levels
+  /roles/{id}:
+    delete:
+      description: Delete a role by ID.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete role
+      tags:
+      - roles
+    get:
+      description: Retrieve a role by ID.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get role by ID
+      tags:
+      - roles
+    patch:
+      consumes:
+      - application/json
+      description: Update a role by ID.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update role payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update role
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      description: Update a role by ID.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update role payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update role
+      tags:
+      - roles
 securityDefinitions:
   BearerAuth:
     description: 'Provide a valid JWT token as: "Bearer <token>"'
