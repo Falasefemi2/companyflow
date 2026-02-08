@@ -246,6 +246,19 @@ definitions:
     - hierarchy_level
     - name
     type: object
+  dto.CreatePermissionRequest:
+    properties:
+      action:
+        type: string
+      conditions:
+        additionalProperties: true
+        type: object
+      resource:
+        type: string
+    required:
+    - action
+    - resource
+    type: object
   dto.CreateRoleRequest:
     properties:
       description:
@@ -398,6 +411,22 @@ definitions:
       role:
         type: string
       token:
+        type: string
+    type: object
+  dto.PermissionResponse:
+    properties:
+      action:
+        type: string
+      conditions:
+        additionalProperties: true
+        type: object
+      created_at:
+        type: string
+      id:
+        type: string
+      resource:
+        type: string
+      role_id:
         type: string
     type: object
   dto.RoleResponse:
@@ -2486,6 +2515,181 @@ paths:
       summary: Update role
       tags:
       - roles
+  /roles/{role_id}/permissions:
+    get:
+      description: Retrieve all permissions for a role.
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PermissionResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get role permissions
+      tags:
+      - permissions
+    post:
+      consumes:
+      - application/json
+      description: Replace all permissions for a role.
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      - description: Permissions payload
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/dto.CreatePermissionRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Set role permissions
+      tags:
+      - permissions
+  /roles/{role_id}/permissions/{permission_id}:
+    delete:
+      description: Remove a permission from a role.
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      - description: Permission ID
+        in: path
+        name: permission_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove permission from role
+      tags:
+      - permissions
+    put:
+      consumes:
+      - application/json
+      description: Add a single permission to a role.
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      - description: Permission payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add permission to role
+      tags:
+      - permissions
 securityDefinitions:
   BearerAuth:
     description: 'Provide a valid JWT token as: "Bearer <token>"'

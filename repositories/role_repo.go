@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -241,4 +242,246 @@ func (r *RoleRepository) DeleteRole(ctx context.Context, roleID uuid.UUID) error
 	}
 
 	return nil
+}
+
+func (r *RoleRepository) SetRolePermissions(ctx context.Context, roleID uuid.UUID, permissions []*models.Permission) (*models.Role, error) {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "DELETE FROM permissions WHERE role_id = $1", roleID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, perm := range permissions {
+		_, err = tx.Exec(ctx, `INSERT INTO permissions (role_id, action, resource, conditions) VALUES ($1, $2, $3, $4)`,
+			roleID, perm.Action, perm.Resource, perm.Conditions)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	cache := make([]string, len(permissions))
+	for i, perm := range permissions {
+		cache[i] = fmt.Sprintf("%s_%s", perm.Action, perm.Resource)
+	}
+
+	cacheJSON, err := json.Marshal(cache)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `
+		UPDATE roles
+		SET permissions_cache = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING id, company_id, name, description, is_system_role, permissions_cache, created_at, updated_at
+	`
+
+	var updatedRole models.Role
+	var cacheJSONFromDB []byte
+
+	err = tx.QueryRow(ctx, query, cacheJSON, roleID).Scan(
+		&updatedRole.ID,
+		&updatedRole.CompanyID,
+		&updatedRole.Name,
+		&updatedRole.Description,
+		&updatedRole.IsSystemRole,
+		&cacheJSONFromDB,
+		&updatedRole.CreatedAt,
+		&updatedRole.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(cacheJSONFromDB, &updatedRole.PermissionsCache)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedRole, nil
+}
+
+func (r *RoleRepository) GetRolePermissions(ctx context.Context, roleID uuid.UUID) ([]*models.Permission, error) {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+	}
+	query := `
+	SELECT id, role_id, action, resource, conditions, created_at
+	FROM permissions
+	WHERE role_id = $1
+	`
+
+	rows, err := r.pool.Query(ctx, query, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var permissions []*models.Permission
+
+	for rows.Next() {
+		var permission models.Permission
+		if err := rows.Scan(
+			&permission.ID,
+			&permission.RoleID,
+			&permission.Action,
+			&permission.Resource,
+			&permission.Conditions,
+			&permission.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, &permission)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return permissions, nil
+}
+
+func (r *RoleRepository) AddPermissionToRole(ctx context.Context, roleID uuid.UUID, permission *models.Permission) (*models.Role, error) {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	permission.RoleID = roleID
+	_, err = tx.Exec(ctx, `INSERT INTO permissions (role_id, action, resource, conditions) VALUES ($1, $2, $3, $4)`,
+		roleID, permission.Action, permission.Resource, permission.Conditions)
+	if err != nil {
+		return nil, err
+	}
+
+	newPermissionString := fmt.Sprintf("%s_%s", permission.Action, permission.Resource)
+	newPermissionJSON, err := json.Marshal([]string{newPermissionString})
+	if err != nil {
+		return nil, err
+	}
+
+	query := `
+		UPDATE roles
+		SET permissions_cache = permissions_cache || $1::jsonb, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING id, company_id, name, description, is_system_role, permissions_cache, created_at, updated_at
+	`
+
+	var updatedRole models.Role
+	var cacheJSONFromDB []byte
+
+	err = tx.QueryRow(ctx, query, newPermissionJSON, roleID).Scan(
+		&updatedRole.ID,
+		&updatedRole.CompanyID,
+		&updatedRole.Name,
+		&updatedRole.Description,
+		&updatedRole.IsSystemRole,
+		&cacheJSONFromDB,
+		&updatedRole.CreatedAt,
+		&updatedRole.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(cacheJSONFromDB, &updatedRole.PermissionsCache)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedRole, nil
+}
+
+func (r *RoleRepository) RemovePermissionFromRole(ctx context.Context, roleID uuid.UUID, permissionID uuid.UUID) (*models.Role, error) {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	query := `SELECT action, resource FROM permissions WHERE id = $1`
+	var action, resource string
+	err = tx.QueryRow(ctx, query, permissionID).Scan(&action, &resource)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tx.Exec(ctx, `DELETE FROM permissions WHERE id = $1`, permissionID)
+	if err != nil {
+		return nil, err
+	}
+
+	permissionString := fmt.Sprintf("%s_%s", action, resource)
+
+	query = `
+		UPDATE roles
+		SET permissions_cache = array_remove(permissions_cache::text[], $1)::jsonb, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING id, company_id, name, description, is_system_role, permissions_cache, created_at, updated_at
+	`
+
+	var updatedRole models.Role
+	var cacheJSONFromDB []byte
+
+	err = tx.QueryRow(ctx, query, permissionString, roleID).Scan(
+		&updatedRole.ID,
+		&updatedRole.CompanyID,
+		&updatedRole.Name,
+		&updatedRole.Description,
+		&updatedRole.IsSystemRole,
+		&cacheJSONFromDB,
+		&updatedRole.CreatedAt,
+		&updatedRole.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(cacheJSONFromDB, &updatedRole.PermissionsCache)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedRole, nil
 }
