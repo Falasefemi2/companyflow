@@ -90,6 +90,10 @@ func main() {
 	roleHandler := handlers.NewRoleHandler(roleService)
 	roleHandler.RegisterRoutes(router)
 
+	permissionService := services.NewPermissionService(roleRepo)
+	permissionHandler := handlers.NewPermissionHandler(permissionService)
+	permissionHandler.RegisterRoutes(router)
+
 	authService := services.NewAuthService(employeeRepo, companyRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	authHandler.RegisterRoutes(router)
