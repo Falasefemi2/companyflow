@@ -14,6 +14,64 @@ import (
 	"github.com/falasefemi2/companyflowlow/utils"
 )
 
+type ILeaveRepository interface {
+	CreateLeaveType(ctx context.Context, leaveType *models.LeaveType) (*models.LeaveType, error)
+
+	GetLeaveTypeByID(ctx context.Context, leaveTypeID uuid.UUID) (*models.LeaveType, error)
+
+	GetLeaveTypeList(
+		ctx context.Context,
+		companyID uuid.UUID,
+		listRequest *dto.LeaveTypeListRequest,
+	) (*utils.PaginatedResponse[*models.LeaveType], error)
+
+	UpdateLeaveType(ctx context.Context, leaveTypeID uuid.UUID, leaveType *models.LeaveType) (*models.LeaveType, error)
+
+	DeleteLeaveType(ctx context.Context, leaveTypeID uuid.UUID) error
+
+	CreateLeaveRequest(
+		ctx context.Context,
+		employeeID uuid.UUID,
+		leaveTypeID uuid.UUID,
+		startDate string, // "2025-02-10"
+		endDate string, // "2025-02-15"
+		daysRequested float64,
+		reason string,
+		attachmentURL *string,
+	) (*models.LeaveRequest, error)
+
+	GetLeaveRequestByID(ctx context.Context, requestID uuid.UUID) (*models.LeaveRequest, error)
+
+	GetLeaveRequestList(
+		ctx context.Context,
+		listRequest *dto.LeaveRequestListRequest,
+	) (*utils.PaginatedResponse[*models.LeaveRequest], error)
+
+	ApproveLeaveRequest(
+		ctx context.Context,
+		requestID uuid.UUID,
+		approvedByID uuid.UUID,
+	) (*models.LeaveRequest, error)
+
+	RejectLeaveRequest(
+		ctx context.Context,
+		requestID uuid.UUID,
+		rejectionReason string,
+	) (*models.LeaveRequest, error)
+
+	WithdrawLeaveRequest(ctx context.Context, requestID uuid.UUID, employeeID uuid.UUID) (*models.LeaveRequest, error)
+
+	CheckBalance(ctx context.Context, employeeID uuid.UUID, leaveTypeID uuid.UUID, year int) (float64, error)
+
+	GetLeaveBalance(ctx context.Context, employeeID uuid.UUID, leaveTypeID uuid.UUID, year int) (*models.LeaveBalance, error)
+
+	GetEmployeeBalances(
+		ctx context.Context,
+		employeeID uuid.UUID,
+		year int,
+	) ([]*models.LeaveBalance, error)
+}
+
 type LeaveRepository struct {
 	pool *pgxpool.Pool
 }

@@ -225,6 +225,29 @@ definitions:
     - role_id
     - status
     type: object
+  dto.CreateLeaveTypeRequest:
+    properties:
+      carryForwardAllowed:
+        type: boolean
+      code:
+        type: string
+      colorCode:
+        type: string
+      daysAllowed:
+        type: number
+      description:
+        type: string
+      isPaid:
+        type: boolean
+      maxCarryForwardDays:
+        type: number
+      name:
+        type: string
+      requiresDocumentation:
+        type: boolean
+      status:
+        type: string
+    type: object
   dto.CreateLevelRequest:
     properties:
       description:
@@ -427,6 +450,31 @@ definitions:
       resource:
         type: string
       role_id:
+        type: string
+    type: object
+  dto.RejectLeaveRequestRequest:
+    properties:
+      rejectionReason:
+        type: string
+      requestId:
+        type: string
+    type: object
+  dto.RequestLeaveRequest:
+    properties:
+      attachment:
+        description: 'Optional: URL'
+        type: string
+      daysRequested:
+        type: number
+      endDate:
+        description: '"2025-02-15"'
+        type: string
+      leaveTypeId:
+        type: string
+      reason:
+        type: string
+      startDate:
+        description: '"2025-02-10" (YYYY-MM-DD format)'
         type: string
     type: object
   dto.RoleResponse:
@@ -851,6 +899,95 @@ definitions:
       status:
         type: string
       terminationDate:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.LeaveBalance:
+    properties:
+      carriedForwardDays:
+        type: number
+      createdAt:
+        type: string
+      employeeID:
+        type: string
+      id:
+        type: string
+      leaveTypeID:
+        type: string
+      pendingDays:
+        type: number
+      totalDays:
+        type: number
+      updatedAt:
+        type: string
+      usedDays:
+        type: number
+      year:
+        type: integer
+    type: object
+  models.LeaveRequest:
+    properties:
+      approvedAt:
+        type: string
+      approvedBy:
+        type: string
+      attachmentURL:
+        type: string
+      createdAt:
+        type: string
+      currentStep:
+        type: integer
+      daysRequested:
+        type: number
+      employeeID:
+        type: string
+      endDate:
+        type: string
+      id:
+        type: string
+      leaveTypeID:
+        type: string
+      reason:
+        type: string
+      rejectionReason:
+        type: string
+      startDate:
+        type: string
+      status:
+        description: '"pending", "approved", etc.'
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.LeaveType:
+    properties:
+      carryForwardAllowed:
+        type: boolean
+      code:
+        type: string
+      colorCode:
+        type: string
+      companyID:
+        type: string
+      createdAt:
+        type: string
+      daysAllowed:
+        type: number
+      description:
+        type: string
+      id:
+        type: string
+      isPaid:
+        type: boolean
+      maxCarryForwardDays:
+        type: number
+      name:
+        type: string
+      requiresDocumentation:
+        type: boolean
+      status:
+        description: '"active", "inactive"'
         type: string
       updatedAt:
         type: string
@@ -1347,6 +1484,66 @@ paths:
       summary: Create employee
       tags:
       - employees
+  /companies/{company_id}/leave-types:
+    get:
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+    post:
+      consumes:
+      - application/json
+      description: Create a new leave type (Admin only).
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Create leave type payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateLeaveTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveType'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create leave type
+      tags:
+      - leave-types
   /companies/{company_id}/levels:
     get:
       description: Get paginated list of levels.
@@ -2016,6 +2213,51 @@ paths:
       summary: Update designation
       tags:
       - designations
+  /employees/{employee_id}/leave-balances:
+    get:
+      description: Get all leave balances for an employee in a specific year.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: employee_id
+        required: true
+        type: string
+      - description: Year
+        in: query
+        name: year
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.LeaveBalance'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get employee leave balances
+      tags:
+      - leave-balance
   /employees/{id}:
     delete:
       description: Delete an employee by ID (soft delete unless hard_delete=true).
@@ -2185,6 +2427,437 @@ paths:
       summary: Update employee
       tags:
       - employees
+  /leave-balance:
+    get:
+      description: Check available leave days for an employee.
+      parameters:
+      - description: Leave Type ID
+        in: query
+        name: leaveTypeId
+        required: true
+        type: string
+      - description: Year
+        in: query
+        name: year
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  format: float64
+                  type: number
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Check available balance
+      tags:
+      - leave-balance
+  /leave-balance/{leave_type_id}:
+    get:
+      description: Get a specific leave balance for an employee.
+      parameters:
+      - description: Leave Type ID
+        in: path
+        name: leave_type_id
+        required: true
+        type: string
+      - description: Year
+        in: query
+        name: year
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveBalance'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get specific leave balance
+      tags:
+      - leave-balance
+  /leave-requests:
+    get:
+      description: Get paginated list of leave requests.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      - description: Filter by employee ID
+        in: query
+        name: employeeId
+        type: string
+      - description: Filter by status (pending/approved/rejected)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List leave requests
+      tags:
+      - leave-requests
+    post:
+      consumes:
+      - application/json
+      description: Employee requests leave.
+      parameters:
+      - description: Request leave payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RequestLeaveRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Request leave
+      tags:
+      - leave-requests
+  /leave-requests/{id}:
+    get:
+      description: Retrieve a leave request by ID.
+      parameters:
+      - description: Leave Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get leave request
+      tags:
+      - leave-requests
+  /leave-requests/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Manager approves a pending leave request.
+      parameters:
+      - description: Leave Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve leave request
+      tags:
+      - leave-requests
+  /leave-requests/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Manager rejects a pending leave request.
+      parameters:
+      - description: Leave Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RejectLeaveRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject leave request
+      tags:
+      - leave-requests
+  /leave-requests/{id}/withdraw:
+    post:
+      description: Employee withdraws their pending leave request.
+      parameters:
+      - description: Leave Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LeaveRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Withdraw leave request
+      tags:
+      - leave-requests
+  /leave-types/{id}:
+    delete:
+      description: Delete a leave type by ID (Admin only).
+      parameters:
+      - description: Leave Type ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete leave type
+      tags:
+      - leave-types
+    get:
+      description: Retrieve a leave type by ID.
+      parameters:
+      - description: Leave Type ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get leave type by ID
+      tags:
+      - leave-types
+    patch:
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+    put:
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
   /levels/{id}:
     delete:
       description: Delete a level by ID.

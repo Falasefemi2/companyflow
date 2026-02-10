@@ -94,6 +94,11 @@ func main() {
 	permissionHandler := handlers.NewPermissionHandler(permissionService)
 	permissionHandler.RegisterRoutes(router)
 
+	leaveRepo := repositories.NewLeaveRepository(pool)
+	leaveService := services.NewLeaveService(leaveRepo)
+	leaveHandler := handlers.NewLeaveHandler(leaveService)
+	leaveHandler.RegisterRoutes(router)
+
 	authService := services.NewAuthService(employeeRepo, companyRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	authHandler.RegisterRoutes(router)
