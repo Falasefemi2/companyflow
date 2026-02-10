@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"regexp"
@@ -38,12 +39,10 @@ func ParseIntParam(r *http.Request, key string) (int, error) {
 	if !ok {
 		return 0, errors.New("missing path parameter")
 	}
-
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, errors.New("invalid path parameter")
 	}
-
 	return id, nil
 }
 
@@ -79,36 +78,57 @@ func VerifyPassword(hashPassword, plainPassword string) bool {
 }
 
 type AuthClaims struct {
-	Role      string `json:"role"`
-	CompanyID string `json:"company_id"`
+	EmployeeID string `json:"employee_id"`
+	Role       string `json:"role"`
+	CompanyID  string `json:"company_id"`
+	Email      string `json:"email"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID, role, companyID string, expiryHours int) (string, error) {
+func GenerateToken(employeeID, role, companyID, email, firstName, lastName string, expiryHours int) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return "", errors.New("JWT_SECRET is not set")
 	}
 
+	if employeeID == "" || role == "" || companyID == "" {
+		return "", errors.New("missing required fields for token generation")
+	}
+
 	now := time.Now()
 	claims := AuthClaims{
-		Role:      role,
-		CompanyID: companyID,
+		EmployeeID: employeeID,
+		Role:       role,
+		CompanyID:  companyID,
+		Email:      email,
+		FirstName:  firstName,
+		LastName:   lastName,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   userID,
+			Subject:   employeeID,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expiryHours) * time.Hour)),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign token: %w", err)
+	}
+
+	return tokenString, nil
 }
 
 func ValidateToken(tokenString string) (*AuthClaims, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return nil, errors.New("JWT_SECRET is not set")
+	}
+
+	if tokenString == "" {
+		return nil, errors.New("token cannot be empty")
 	}
 
 	parsed, err := jwt.ParseWithClaims(
@@ -122,7 +142,7 @@ func ValidateToken(tokenString string) (*AuthClaims, error) {
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
 	claims, ok := parsed.Claims.(*AuthClaims)
@@ -130,7 +150,28 @@ func ValidateToken(tokenString string) (*AuthClaims, error) {
 		return nil, errors.New("invalid token")
 	}
 
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("token has expired")
+	}
+
 	return claims, nil
+}
+
+func RefreshToken(oldTokenString string) (string, error) {
+	claims, err := ValidateToken(oldTokenString)
+	if err != nil {
+		return "", fmt.Errorf("cannot refresh invalid token: %w", err)
+	}
+
+	return GenerateToken(
+		claims.EmployeeID,
+		claims.Role,
+		claims.CompanyID,
+		claims.Email,
+		claims.FirstName,
+		claims.LastName,
+		24,
+	)
 }
 
 type PaginationParams struct {
