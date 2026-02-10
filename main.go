@@ -101,6 +101,17 @@ func main() {
 	roleHandler := handlers.NewRoleHandler(roleService)
 	roleHandler.RegisterRoutes(router)
 
+	bulkEmployeeValidator := services.NewBulkEmployeeValidator(
+		employeeRepo,
+		departmentRepo,
+		roleRepo,
+		designationRepo,
+		levelRepo,
+	)
+	bulkEmployeeService := services.NewBulkEmployeeService(employeeRepo, bulkEmployeeValidator)
+	bulkEmployeeHandler := handlers.NewBulkEmployeeHandler(bulkEmployeeService)
+	bulkEmployeeHandler.RegisterRoutes(router)
+
 	permissionService := services.NewPermissionService(roleRepo)
 	permissionHandler := handlers.NewPermissionHandler(permissionService)
 	permissionHandler.RegisterRoutes(router)

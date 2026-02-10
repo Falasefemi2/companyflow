@@ -714,6 +714,80 @@
                 }
             }
         },
+        "/companies/{company_id}/employees/bulk": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a CSV file to create employees in bulk.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "employees"
+                ],
+                "summary": "Bulk upload employees",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "company_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "CSV file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/services.BulkCreateEmployeesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{company_id}/leave-types": {
             "get": {
                 "security": [
@@ -3947,6 +4021,90 @@
         }
     },
     "definitions": {
+        "dto.BulkEmployeeError": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "description": "Multiple validation errors per row",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "record": {
+                    "$ref": "#/definitions/dto.BulkEmployeeRecord"
+                },
+                "rowNumber": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.BulkEmployeeRecord": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "dateOfBirth": {
+                    "type": "string"
+                },
+                "departmentID": {
+                    "type": "string"
+                },
+                "designationID": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "emergencyContactName": {
+                    "type": "string"
+                },
+                "emergencyContactPhone": {
+                    "type": "string"
+                },
+                "employeeCode": {
+                    "type": "string"
+                },
+                "employmentType": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "hireDate": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "levelID": {
+                    "type": "string"
+                },
+                "managerID": {
+                    "type": "string"
+                },
+                "password": {
+                    "description": "temporary, only for CSV parsing",
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "profileImageUrl": {
+                    "type": "string"
+                },
+                "roleID": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CompanyAdminRequest": {
             "type": "object",
             "required": [
@@ -5497,6 +5655,56 @@
                     }
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.BulkCreateEmployeesResponse": {
+            "type": "object",
+            "properties": {
+                "createdEmployees": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.BulkCreatedEmployee"
+                    }
+                },
+                "failureCount": {
+                    "type": "integer"
+                },
+                "successCount": {
+                    "type": "integer"
+                },
+                "validationErrors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BulkEmployeeError"
+                    }
+                }
+            }
+        },
+        "services.BulkCreatedEmployee": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "employeeCode": {
+                    "type": "string"
+                },
+                "employeeID": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "tempPassword": {
+                    "description": "Must be shared with user securely",
                     "type": "string"
                 }
             }

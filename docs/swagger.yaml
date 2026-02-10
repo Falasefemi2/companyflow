@@ -1,5 +1,61 @@
 basePath: /
 definitions:
+  dto.BulkEmployeeError:
+    properties:
+      errors:
+        description: Multiple validation errors per row
+        items:
+          type: string
+        type: array
+      record:
+        $ref: '#/definitions/dto.BulkEmployeeRecord'
+      rowNumber:
+        type: integer
+    type: object
+  dto.BulkEmployeeRecord:
+    properties:
+      address:
+        type: string
+      dateOfBirth:
+        type: string
+      departmentID:
+        type: string
+      designationID:
+        type: string
+      email:
+        type: string
+      emergencyContactName:
+        type: string
+      emergencyContactPhone:
+        type: string
+      employeeCode:
+        type: string
+      employmentType:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: string
+      hireDate:
+        type: string
+      lastName:
+        type: string
+      levelID:
+        type: string
+      managerID:
+        type: string
+      password:
+        description: temporary, only for CSV parsing
+        type: string
+      phone:
+        type: string
+      profileImageUrl:
+        type: string
+      roleID:
+        type: string
+      status:
+        type: string
+    type: object
   dto.CompanyAdminRequest:
     properties:
       email:
@@ -1058,6 +1114,39 @@ definitions:
       updatedAt:
         type: string
     type: object
+  services.BulkCreateEmployeesResponse:
+    properties:
+      createdEmployees:
+        items:
+          $ref: '#/definitions/services.BulkCreatedEmployee'
+        type: array
+      failureCount:
+        type: integer
+      successCount:
+        type: integer
+      validationErrors:
+        items:
+          $ref: '#/definitions/dto.BulkEmployeeError'
+        type: array
+    type: object
+  services.BulkCreatedEmployee:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      employeeCode:
+        type: string
+      employeeID:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      tempPassword:
+        description: Must be shared with user securely
+        type: string
+    type: object
   utils.APIResponse:
     properties:
       data: {}
@@ -1505,6 +1594,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Create employee
+      tags:
+      - employees
+  /companies/{company_id}/employees/bulk:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a CSV file to create employees in bulk.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: CSV file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.BulkCreateEmployeesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Bulk upload employees
       tags:
       - employees
   /companies/{company_id}/leave-types:

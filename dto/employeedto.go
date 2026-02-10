@@ -3,6 +3,8 @@ package dto
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/falasefemi2/companyflowlow/utils"
 )
 
@@ -82,4 +84,45 @@ type EmployeeListRequest struct {
 	ManagerID      string `json:"manager_id" validate:"omitempty"`      // Filter by manager
 	EmploymentType string `json:"employment_type" validate:"omitempty"` // Filter by employment type
 	Search         string `json:"search" validate:"omitempty"`          // Search in name/email
+}
+
+type BulkEmployeeRecord struct {
+	Email                 string `csv:"email"`
+	Password              string `csv:"password"` // temporary, only for CSV parsing
+	Phone                 string `csv:"phone"`
+	FirstName             string `csv:"first_name"`
+	LastName              string `csv:"last_name"`
+	DateOfBirth           string `csv:"date_of_birth"`
+	EmployeeCode          string `csv:"employee_code"`
+	DepartmentID          string `csv:"department_id"`
+	DesignationID         string `csv:"designation_id"`
+	LevelID               string `csv:"level_id"`
+	RoleID                string `csv:"role_id"`
+	ManagerID             string `csv:"manager_id"`
+	Status                string `csv:"status"`
+	EmploymentType        string `csv:"employment_type"`
+	HireDate              string `csv:"hire_date"`
+	Gender                string `csv:"gender"`
+	Address               string `csv:"address"`
+	EmergencyContactName  string `csv:"emergency_contact_name"`
+	EmergencyContactPhone string `csv:"emergency_contact_phone"`
+	ProfileImageUrl       string `csv:"profile_image_url"`
+}
+
+type BulkEmployeeRequest struct {
+	CompanyID uuid.UUID
+	Records   []BulkEmployeeRecord
+}
+
+type BulkEmployeeResponse struct {
+	SuccessCount     int
+	FailureCount     int
+	Errors           []BulkEmployeeError
+	CreatedEmployees []uuid.UUID
+}
+
+type BulkEmployeeError struct {
+	RowNumber int
+	Record    BulkEmployeeRecord
+	Errors    []string // Multiple validation errors per row
 }
