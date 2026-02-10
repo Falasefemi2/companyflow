@@ -621,6 +621,29 @@ definitions:
         description: 'Format: YYYY-MM-DD'
         type: string
     type: object
+  dto.UpdateLeaveTypeRequest:
+    properties:
+      carryForwardAllowed:
+        type: boolean
+      code:
+        type: string
+      colorCode:
+        type: string
+      daysAllowed:
+        type: number
+      description:
+        type: string
+      isPaid:
+        type: boolean
+      maxCarryForwardDays:
+        type: number
+      name:
+        type: string
+      requiresDocumentation:
+        type: boolean
+      status:
+        type: string
+    type: object
   dto.UpdateLevelRequest:
     properties:
       description:
@@ -1486,7 +1509,36 @@ paths:
       - employees
   /companies/{company_id}/leave-types:
     get:
+      description: Get paginated list of leave types for a company.
+      parameters:
+      - description: Company ID
+        in: path
+        name: company_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      - description: Leave type status (active/inactive)
+        in: query
+        name: status
+        type: string
+      - description: Search by name or code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
       responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
         "400":
           description: Bad Request
           schema:
@@ -1499,6 +1551,11 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List leave types
+      tags:
+      - leave-types
     post:
       consumes:
       - application/json
@@ -2831,7 +2888,28 @@ paths:
       tags:
       - leave-types
     patch:
+      consumes:
+      - application/json
+      description: Update a leave type by ID (Admin only).
+      parameters:
+      - description: Leave Type ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update leave type payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateLeaveTypeRequest'
+      produces:
+      - application/json
       responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
         "400":
           description: Bad Request
           schema:
@@ -2844,8 +2922,34 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update leave type
+      tags:
+      - leave-types
     put:
+      consumes:
+      - application/json
+      description: Update a leave type by ID (Admin only).
+      parameters:
+      - description: Leave Type ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update leave type payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateLeaveTypeRequest'
+      produces:
+      - application/json
       responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
         "400":
           description: Bad Request
           schema:
@@ -2858,6 +2962,11 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update leave type
+      tags:
+      - leave-types
   /levels/{id}:
     delete:
       description: Delete a level by ID.

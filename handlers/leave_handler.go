@@ -142,7 +142,7 @@ func (h *LeaveHandler) GetLeaveTypeByID(w http.ResponseWriter, r *http.Request) 
 // @Param status query string false "Leave type status (active/inactive)"
 // @Param search query string false "Search by name or code"
 // @Security BearerAuth
-
+// @Success 200 {object} utils.APIResponse
 // @Failure 400 {object} utils.APIResponse
 // @Failure 401 {object} utils.APIResponse
 // @Failure 500 {object} utils.APIResponse
@@ -200,7 +200,7 @@ func (h *LeaveHandler) GetLeaveTypeList(w http.ResponseWriter, r *http.Request) 
 // @Param id path string true "Leave Type ID"
 // @Param request body dto.UpdateLeaveTypeRequest true "Update leave type payload"
 // @Security BearerAuth
-
+// @Success 200 {object} utils.APIResponse
 // @Failure 400 {object} utils.APIResponse
 // @Failure 401 {object} utils.APIResponse
 // @Failure 500 {object} utils.APIResponse
