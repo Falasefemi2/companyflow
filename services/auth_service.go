@@ -44,10 +44,6 @@ func (as *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.L
 		return nil, ErrInvalidCredentials
 	}
 
-	if roleName != "Super Admin" && roleName != "HR Manager" {
-		return nil, ErrInvalidCredentials
-	}
-
 	if employee.Status != "active" {
 		return nil, ErrInvalidCredentials
 	}
