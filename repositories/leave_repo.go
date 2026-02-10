@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -460,6 +461,8 @@ func (l *LeaveRepository) CreateLeaveRequest(
 	`
 
 	var leaveRequest models.LeaveRequest
+	var rn sql.NullString
+
 	err = tx.QueryRow(ctx, leaveRequestQuery,
 		employeeID,
 		leaveTypeID,
@@ -483,12 +486,18 @@ func (l *LeaveRepository) CreateLeaveRequest(
 		&leaveRequest.CurrentStep,
 		&leaveRequest.ApprovedBy,
 		&leaveRequest.ApprovedAt,
-		&leaveRequest.RejectionReason,
+		&rn,
 		&leaveRequest.CreatedAt,
 		&leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if rn.Valid {
+		leaveRequest.RejectionReason = rn.String
+	} else {
+		leaveRequest.RejectionReason = ""
 	}
 
 	updateBalanceQuery := `
@@ -525,6 +534,7 @@ func (l *LeaveRepository) GetLeaveRequestByID(ctx context.Context, requestID uui
 	`
 
 	var leaveRequest models.LeaveRequest
+	var rn sql.NullString
 	err := l.pool.QueryRow(ctx, query, requestID).Scan(
 		&leaveRequest.ID,
 		&leaveRequest.EmployeeID,
@@ -538,12 +548,18 @@ func (l *LeaveRepository) GetLeaveRequestByID(ctx context.Context, requestID uui
 		&leaveRequest.CurrentStep,
 		&leaveRequest.ApprovedBy,
 		&leaveRequest.ApprovedAt,
-		&leaveRequest.RejectionReason,
+		&rn,
 		&leaveRequest.CreatedAt,
 		&leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if rn.Valid {
+		leaveRequest.RejectionReason = rn.String
+	} else {
+		leaveRequest.RejectionReason = ""
 	}
 
 	return &leaveRequest, nil
@@ -610,6 +626,7 @@ func (l *LeaveRepository) GetLeaveRequestList(
 
 	for rows.Next() {
 		var lr models.LeaveRequest
+		var rn sql.NullString
 		if err := rows.Scan(
 			&lr.ID,
 			&lr.EmployeeID,
@@ -623,11 +640,16 @@ func (l *LeaveRepository) GetLeaveRequestList(
 			&lr.CurrentStep,
 			&lr.ApprovedBy,
 			&lr.ApprovedAt,
-			&lr.RejectionReason,
+			&rn,
 			&lr.CreatedAt,
 			&lr.UpdatedAt,
 		); err != nil {
 			return nil, err
+		}
+		if rn.Valid {
+			lr.RejectionReason = rn.String
+		} else {
+			lr.RejectionReason = ""
 		}
 		leaveRequests = append(leaveRequests, &lr)
 	}
@@ -698,6 +720,7 @@ func (l *LeaveRepository) ApproveLeaveRequest(
 	`
 
 	var leaveRequest models.LeaveRequest
+	var rn sql.NullString
 	err = tx.QueryRow(ctx, updateRequestQuery, approvedByID, requestID).Scan(
 		&leaveRequest.ID,
 		&leaveRequest.EmployeeID,
@@ -711,12 +734,18 @@ func (l *LeaveRepository) ApproveLeaveRequest(
 		&leaveRequest.CurrentStep,
 		&leaveRequest.ApprovedBy,
 		&leaveRequest.ApprovedAt,
-		&leaveRequest.RejectionReason,
+		&rn,
 		&leaveRequest.CreatedAt,
 		&leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if rn.Valid {
+		leaveRequest.RejectionReason = rn.String
+	} else {
+		leaveRequest.RejectionReason = ""
 	}
 
 	updateBalanceQuery := `
@@ -790,6 +819,7 @@ func (l *LeaveRepository) RejectLeaveRequest(
 	`
 
 	var leaveRequest models.LeaveRequest
+	var rn sql.NullString
 	err = tx.QueryRow(ctx, updateRequestQuery, rejectionReason, requestID).Scan(
 		&leaveRequest.ID,
 		&leaveRequest.EmployeeID,
@@ -803,12 +833,18 @@ func (l *LeaveRepository) RejectLeaveRequest(
 		&leaveRequest.CurrentStep,
 		&leaveRequest.ApprovedBy,
 		&leaveRequest.ApprovedAt,
-		&leaveRequest.RejectionReason,
+		&rn,
 		&leaveRequest.CreatedAt,
 		&leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if rn.Valid {
+		leaveRequest.RejectionReason = rn.String
+	} else {
+		leaveRequest.RejectionReason = ""
 	}
 
 	updateBalanceQuery := `
@@ -876,6 +912,7 @@ func (l *LeaveRepository) WithdrawLeaveRequest(ctx context.Context, requestID uu
 	`
 
 	var leaveRequest models.LeaveRequest
+	var rn sql.NullString
 	err = tx.QueryRow(ctx, updateRequestQuery, requestID).Scan(
 		&leaveRequest.ID,
 		&leaveRequest.EmployeeID,
@@ -889,12 +926,18 @@ func (l *LeaveRepository) WithdrawLeaveRequest(ctx context.Context, requestID uu
 		&leaveRequest.CurrentStep,
 		&leaveRequest.ApprovedBy,
 		&leaveRequest.ApprovedAt,
-		&leaveRequest.RejectionReason,
+		&rn,
 		&leaveRequest.CreatedAt,
 		&leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if rn.Valid {
+		leaveRequest.RejectionReason = rn.String
+	} else {
+		leaveRequest.RejectionReason = ""
 	}
 
 	updateBalanceQuery := `
