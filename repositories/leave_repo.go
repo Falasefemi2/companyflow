@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -58,6 +59,7 @@ type ILeaveRepository interface {
 		ctx context.Context,
 		requestID uuid.UUID,
 		rejectionReason string,
+		rejectedByID ...uuid.UUID,
 	) (*models.LeaveRequest, error)
 
 	WithdrawLeaveRequest(ctx context.Context, requestID uuid.UUID, employeeID uuid.UUID) (*models.LeaveRequest, error)
@@ -689,57 +691,136 @@ func (l *LeaveRepository) ApproveLeaveRequest(
 	defer tx.Rollback(ctx)
 
 	getRequestQuery := `
-	SELECT employee_id, leave_type_id, days_requested, start_date
-	FROM leave_requests
-	WHERE id = $1 AND status = 'pending'
+	SELECT
+		lr.employee_id,
+		lr.leave_type_id,
+		lr.days_requested,
+		lr.start_date,
+		lr.current_step,
+		e.company_id,
+		e.department_id
+	FROM leave_requests lr
+	JOIN employees e ON e.id = lr.employee_id
+	WHERE lr.id = $1 AND lr.status = 'pending'
+	FOR UPDATE
 	`
 
-	var employeeID, leaveTypeID uuid.UUID
+	var employeeID, leaveTypeID, companyID uuid.UUID
+	var departmentID *uuid.UUID
 	var daysRequested float64
 	var startDate time.Time
+	var currentStep int
 
 	err = tx.QueryRow(ctx, getRequestQuery, requestID).Scan(
 		&employeeID,
 		&leaveTypeID,
 		&daysRequested,
 		&startDate,
+		&currentStep,
+		&companyID,
+		&departmentID,
 	)
 	if err != nil {
 		return nil, err
 	}
+	if currentStep < 1 {
+		currentStep = 1
+	}
 
 	year := startDate.Year()
 
-	updateRequestQuery := `
-	UPDATE leave_requests
-	SET status = 'approved', approved_by = $1, approved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-	WHERE id = $2
-	RETURNING id, employee_id, leave_type_id, start_date, end_date, days_requested,
-		reason, attachment_url, status, current_step, approved_by, approved_at,
-		rejection_reason, created_at, updated_at
-	`
+	finalStep := currentStep
+	stepsJSON, _ := lookupWorkflowSteps(ctx, tx, companyID, "leave", departmentID)
+	if len(stepsJSON) > 0 {
+		var workflowSteps []ApprovalWorkflowStep
+		if err := json.Unmarshal(stepsJSON, &workflowSteps); err != nil {
+			return nil, fmt.Errorf("invalid leave workflow steps: %w", err)
+		}
+		stepCfg, err := getWorkflowStep(workflowSteps, currentStep)
+		if err != nil {
+			return nil, err
+		}
+		if err := validateStepApprover(ctx, tx, stepCfg, approvedByID); err != nil {
+			return nil, err
+		}
+		finalStep = getFinalWorkflowStep(workflowSteps)
+	}
 
 	var leaveRequest models.LeaveRequest
 	var rn sql.NullString
-	err = tx.QueryRow(ctx, updateRequestQuery, approvedByID, requestID).Scan(
-		&leaveRequest.ID,
-		&leaveRequest.EmployeeID,
-		&leaveRequest.LeaveTypeID,
-		&leaveRequest.StartDate,
-		&leaveRequest.EndDate,
-		&leaveRequest.DaysRequested,
-		&leaveRequest.Reason,
-		&leaveRequest.AttachmentURL,
-		&leaveRequest.Status,
-		&leaveRequest.CurrentStep,
-		&leaveRequest.ApprovedBy,
-		&leaveRequest.ApprovedAt,
-		&rn,
-		&leaveRequest.CreatedAt,
-		&leaveRequest.UpdatedAt,
-	)
-	if err != nil {
-		return nil, err
+	if currentStep >= finalStep {
+		updateRequestQuery := `
+		UPDATE leave_requests
+		SET status = 'approved', approved_by = $1, approved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING id, employee_id, leave_type_id, start_date, end_date, days_requested,
+			reason, attachment_url, status, current_step, approved_by, approved_at,
+			rejection_reason, created_at, updated_at
+		`
+
+		err = tx.QueryRow(ctx, updateRequestQuery, approvedByID, requestID).Scan(
+			&leaveRequest.ID,
+			&leaveRequest.EmployeeID,
+			&leaveRequest.LeaveTypeID,
+			&leaveRequest.StartDate,
+			&leaveRequest.EndDate,
+			&leaveRequest.DaysRequested,
+			&leaveRequest.Reason,
+			&leaveRequest.AttachmentURL,
+			&leaveRequest.Status,
+			&leaveRequest.CurrentStep,
+			&leaveRequest.ApprovedBy,
+			&leaveRequest.ApprovedAt,
+			&rn,
+			&leaveRequest.CreatedAt,
+			&leaveRequest.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		updateBalanceQuery := `
+		UPDATE leave_balances
+		SET 
+			pending_days = pending_days - $1,
+			used_days = used_days + $2,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE employee_id = $3 AND leave_type_id = $4 AND year = $5
+		`
+
+		if _, err = tx.Exec(ctx, updateBalanceQuery, daysRequested, daysRequested, employeeID, leaveTypeID, year); err != nil {
+			return nil, err
+		}
+	} else {
+		updateRequestQuery := `
+		UPDATE leave_requests
+		SET current_step = current_step + 1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+		RETURNING id, employee_id, leave_type_id, start_date, end_date, days_requested,
+			reason, attachment_url, status, current_step, approved_by, approved_at,
+			rejection_reason, created_at, updated_at
+		`
+
+		err = tx.QueryRow(ctx, updateRequestQuery, requestID).Scan(
+			&leaveRequest.ID,
+			&leaveRequest.EmployeeID,
+			&leaveRequest.LeaveTypeID,
+			&leaveRequest.StartDate,
+			&leaveRequest.EndDate,
+			&leaveRequest.DaysRequested,
+			&leaveRequest.Reason,
+			&leaveRequest.AttachmentURL,
+			&leaveRequest.Status,
+			&leaveRequest.CurrentStep,
+			&leaveRequest.ApprovedBy,
+			&leaveRequest.ApprovedAt,
+			&rn,
+			&leaveRequest.CreatedAt,
+			&leaveRequest.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if rn.Valid {
@@ -748,22 +829,19 @@ func (l *LeaveRepository) ApproveLeaveRequest(
 		leaveRequest.RejectionReason = ""
 	}
 
-	updateBalanceQuery := `
-	UPDATE leave_balances
-	SET 
-		pending_days = pending_days - $1,
-		used_days = used_days + $2,
-		updated_at = CURRENT_TIMESTAMP
-	WHERE employee_id = $3 AND leave_type_id = $4 AND year = $5
-	`
-
-	_, err = tx.Exec(ctx, updateBalanceQuery, daysRequested, daysRequested, employeeID, leaveTypeID, year)
-	if err != nil {
+	if _, err = tx.Exec(
+		ctx,
+		`INSERT INTO approval_history (entity_type, entity_id, step_number, approver_id, action, comments)
+		 VALUES ('leave_request', $1, $2, $3, 'approved', $4)`,
+		requestID,
+		currentStep,
+		approvedByID,
+		"",
+	); err != nil {
 		return nil, err
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -774,6 +852,7 @@ func (l *LeaveRepository) RejectLeaveRequest(
 	ctx context.Context,
 	requestID uuid.UUID,
 	rejectionReason string,
+	rejectedByID ...uuid.UUID,
 ) (*models.LeaveRequest, error) {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -788,23 +867,60 @@ func (l *LeaveRepository) RejectLeaveRequest(
 	defer tx.Rollback(ctx)
 
 	getRequestQuery := `
-	SELECT employee_id, leave_type_id, days_requested, start_date
-	FROM leave_requests
-	WHERE id = $1 AND status = 'pending'
+	SELECT
+		lr.employee_id,
+		lr.leave_type_id,
+		lr.days_requested,
+		lr.start_date,
+		lr.current_step,
+		e.company_id,
+		e.department_id
+	FROM leave_requests lr
+	JOIN employees e ON e.id = lr.employee_id
+	WHERE lr.id = $1 AND lr.status = 'pending'
+	FOR UPDATE
 	`
 
-	var employeeID, leaveTypeID uuid.UUID
+	var employeeID, leaveTypeID, companyID uuid.UUID
+	var departmentID *uuid.UUID
 	var daysRequested float64
 	var startDate time.Time
+	var currentStep int
 
 	err = tx.QueryRow(ctx, getRequestQuery, requestID).Scan(
 		&employeeID,
 		&leaveTypeID,
 		&daysRequested,
 		&startDate,
+		&currentStep,
+		&companyID,
+		&departmentID,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if currentStep < 1 {
+		currentStep = 1
+	}
+
+	var actorID uuid.UUID
+	if len(rejectedByID) > 0 {
+		actorID = rejectedByID[0]
+	}
+
+	stepsJSON, _ := lookupWorkflowSteps(ctx, tx, companyID, "leave", departmentID)
+	if len(stepsJSON) > 0 && actorID != uuid.Nil {
+		var workflowSteps []ApprovalWorkflowStep
+		if err := json.Unmarshal(stepsJSON, &workflowSteps); err != nil {
+			return nil, fmt.Errorf("invalid leave workflow steps: %w", err)
+		}
+		stepCfg, err := getWorkflowStep(workflowSteps, currentStep)
+		if err != nil {
+			return nil, err
+		}
+		if err := validateStepApprover(ctx, tx, stepCfg, actorID); err != nil {
+			return nil, err
+		}
 	}
 
 	year := startDate.Year()
@@ -845,6 +961,21 @@ func (l *LeaveRepository) RejectLeaveRequest(
 		leaveRequest.RejectionReason = rn.String
 	} else {
 		leaveRequest.RejectionReason = ""
+	}
+
+	if actorID != uuid.Nil {
+		_, err = tx.Exec(
+			ctx,
+			`INSERT INTO approval_history (entity_type, entity_id, step_number, approver_id, action, comments)
+			 VALUES ('leave_request', $1, $2, $3, 'rejected', $4)`,
+			requestID,
+			currentStep,
+			actorID,
+			rejectionReason,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	updateBalanceQuery := `
@@ -1070,4 +1201,45 @@ func (l *LeaveRepository) GetLeaveBalance(ctx context.Context, employeeID uuid.U
 	}
 
 	return &lb, nil
+}
+
+func getWorkflowStep(steps []ApprovalWorkflowStep, stepNumber int) (*ApprovalWorkflowStep, error) {
+	for i := range steps {
+		if steps[i].Step == stepNumber {
+			return &steps[i], nil
+		}
+	}
+	return nil, fmt.Errorf("no workflow step configured for step %d", stepNumber)
+}
+
+func getFinalWorkflowStep(steps []ApprovalWorkflowStep) int {
+	finalStep := 1
+	for _, step := range steps {
+		if step.Step > finalStep {
+			finalStep = step.Step
+		}
+	}
+	return finalStep
+}
+
+func validateStepApprover(ctx context.Context, tx pgxTx, stepCfg *ApprovalWorkflowStep, approverID uuid.UUID) error {
+	if stepCfg == nil {
+		return nil
+	}
+
+	if stepCfg.ApproverID != nil && *stepCfg.ApproverID != approverID {
+		return errors.New("you are not assigned to this approval step")
+	}
+
+	if stepCfg.RoleID != nil {
+		var approverRoleID uuid.UUID
+		if err := tx.QueryRow(ctx, "SELECT role_id FROM employees WHERE id = $1", approverID).Scan(&approverRoleID); err != nil {
+			return errors.New("unable to verify approver role")
+		}
+		if approverRoleID != *stepCfg.RoleID {
+			return errors.New("approver role does not match workflow step requirement")
+		}
+	}
+
+	return nil
 }

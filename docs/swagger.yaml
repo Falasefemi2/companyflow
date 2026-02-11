@@ -112,6 +112,21 @@ definitions:
       updated_at:
         type: string
     type: object
+  dto.CreateApprovalWorkflowRequest:
+    properties:
+      companyId:
+        type: string
+      departmentId:
+        type: string
+      isActive:
+        type: boolean
+      steps:
+        items:
+          type: integer
+        type: array
+      workflowType:
+        type: string
+    type: object
   dto.CreateCompanyRequest:
     properties:
       address:
@@ -325,6 +340,25 @@ definitions:
     - hierarchy_level
     - name
     type: object
+  dto.CreateMemoRequest:
+    properties:
+      companyId:
+        type: string
+      content:
+        type: string
+      memoType:
+        type: string
+      priority:
+        type: string
+      recipientIds:
+        items:
+          type: string
+        type: array
+      referenceNumber:
+        type: string
+      title:
+        type: string
+    type: object
   dto.CreatePermissionRequest:
     properties:
       action:
@@ -490,6 +524,11 @@ definitions:
       role:
         type: string
       token:
+        type: string
+    type: object
+  dto.MemoActionRequest:
+    properties:
+      comments:
         type: string
     type: object
   dto.PermissionResponse:
@@ -845,6 +884,44 @@ definitions:
       total_pages:
         type: integer
     type: object
+  models.ApprovalHistory:
+    properties:
+      action:
+        type: string
+      approverID:
+        type: string
+      comments:
+        type: string
+      createdAt:
+        type: string
+      entityID:
+        type: string
+      entityType:
+        type: string
+      id:
+        type: string
+      stepNumber:
+        type: integer
+    type: object
+  models.ApprovalWorkflow:
+    properties:
+      companyID:
+        type: string
+      createdAt:
+        type: string
+      departmentID:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      steps:
+        items:
+          type: integer
+        type: array
+      workflowType:
+        type: string
+    type: object
   models.Company:
     properties:
       address:
@@ -1093,6 +1170,33 @@ definitions:
       updatedAt:
         type: string
     type: object
+  models.Memo:
+    properties:
+      companyID:
+        type: string
+      content:
+        type: string
+      createdAt:
+        type: string
+      currentStep:
+        type: integer
+      employeeID:
+        type: string
+      id:
+        type: string
+      memoType:
+        type: string
+      priority:
+        type: string
+      referenceNumber:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   models.Role:
     properties:
       companyID:
@@ -1163,6 +1267,138 @@ info:
   title: CompanyFlow API
   version: "1.0"
 paths:
+  /approval-history:
+    get:
+      description: Get approval history entries for an entity.
+      parameters:
+      - description: Entity type (leave_request/memo)
+        in: query
+        name: entityType
+        required: true
+        type: string
+      - description: Entity ID
+        in: query
+        name: entityId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ApprovalHistory'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get approval history
+      tags:
+      - approval-history
+  /approval-workflows:
+    get:
+      description: Get approval workflows for the authenticated company.
+      parameters:
+      - description: Workflow type (leave/memo/expense)
+        in: query
+        name: workflowType
+        type: string
+      - description: Department ID filter
+        in: query
+        name: departmentId
+        type: string
+      - description: Only active workflows (default true)
+        in: query
+        name: onlyActive
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ApprovalWorkflow'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval workflows
+      tags:
+      - approval-workflows
+    post:
+      consumes:
+      - application/json
+      description: Create an approval workflow for a company.
+      parameters:
+      - description: Create approval workflow payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateApprovalWorkflowRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ApprovalWorkflow'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create approval workflow
+      tags:
+      - approval-workflows
   /auth/login:
     post:
       consumes:
@@ -3266,6 +3502,264 @@ paths:
       summary: Update level
       tags:
       - levels
+  /memos:
+    get:
+      description: Get paginated list of memos.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      - description: Filter by employee ID
+        in: query
+        name: employeeId
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by memo type
+        in: query
+        name: memoType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List memos
+      tags:
+      - memos
+    post:
+      consumes:
+      - application/json
+      description: Create a new memo and optional recipients.
+      parameters:
+      - description: Create memo payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMemoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Memo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create memo
+      tags:
+      - memos
+  /memos/{id}:
+    get:
+      description: Retrieve a memo by ID.
+      parameters:
+      - description: Memo ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Memo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get memo by ID
+      tags:
+      - memos
+  /memos/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approve memo at current workflow step.
+      parameters:
+      - description: Memo ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Approval comments
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.MemoActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Memo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve memo
+      tags:
+      - memos
+  /memos/{id}/read:
+    post:
+      description: Mark a memo as read for the authenticated recipient.
+      parameters:
+      - description: Memo ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark memo as read
+      tags:
+      - memos
+  /memos/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Reject memo at current workflow step.
+      parameters:
+      - description: Memo ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection comments
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/dto.MemoActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Memo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject memo
+      tags:
+      - memos
   /roles/{id}:
     delete:
       description: Delete a role by ID.

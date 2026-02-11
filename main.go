@@ -121,6 +121,16 @@ func main() {
 	leaveHandler := handlers.NewLeaveHandler(leaveService)
 	leaveHandler.RegisterRoutes(router)
 
+	approvalRepo := repositories.NewApprovalRepository(pool)
+	approvalService := services.NewApprovalService(approvalRepo)
+	approvalHandler := handlers.NewApprovalHandler(approvalService)
+	approvalHandler.RegisterRoutes(router)
+
+	memoRepo := repositories.NewMemoRepository(pool)
+	memoService := services.NewMemoService(memoRepo)
+	memoHandler := handlers.NewMemoHandler(memoService)
+	memoHandler.RegisterRoutes(router)
+
 	authService := services.NewAuthService(employeeRepo, companyRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	authHandler.RegisterRoutes(router)
