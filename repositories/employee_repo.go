@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/falasefemi2/companyflowlow/dto"
@@ -97,7 +99,6 @@ func (e *EmployeeRepository) CreateEmployee(ctx context.Context, employee *model
 		&employee.CreatedAt,
 		&employee.UpdatedAt,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,6 @@ func (e *EmployeeRepository) GetEmployeeByID(ctx context.Context, employeeID uui
 		&employee.CreatedAt,
 		&employee.UpdatedAt,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,6 @@ func (e *EmployeeRepository) GetEmployeeList(
 	companyID uuid.UUID,
 	listRequest *dto.EmployeeListRequest,
 ) (*utils.PaginatedResponse[*models.Employee], error) {
-
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
@@ -475,4 +474,136 @@ func (e *EmployeeRepository) DeleteEmployee(ctx context.Context, employeeID stri
 	}
 
 	return nil
+}
+
+func (e *EmployeeRepository) BulkCreateEmployees(
+	ctx context.Context,
+	employees []*models.Employee,
+) ([]*models.Employee, error) {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 30*time.Second) // Longer timeout for bulk operations
+		defer cancel()
+	}
+
+	// Start transaction
+	tx, err := e.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) // Will be no-op if already committed
+
+	// Build multi-row INSERT statement
+	placeholders := make([]string, len(employees))
+	args := make([]interface{}, 0, len(employees)*21) // 21 fields per employee
+
+	paramNum := 1
+	for i, emp := range employees {
+		// Each employee has 21 parameters
+		placeholders[i] = fmt.Sprintf(
+			"($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
+			paramNum, paramNum+1, paramNum+2, paramNum+3, paramNum+4,
+			paramNum+5, paramNum+6, paramNum+7, paramNum+8, paramNum+9,
+			paramNum+10, paramNum+11, paramNum+12, paramNum+13, paramNum+14,
+			paramNum+15, paramNum+16, paramNum+17, paramNum+18, paramNum+19,
+			paramNum+20,
+		)
+
+		args = append(args,
+			emp.CompanyID,
+			emp.Email,
+			emp.PasswordHash,
+			emp.Phone,
+			emp.FirstName,
+			emp.LastName,
+			emp.EmployeeCode,
+			emp.DepartmentID,
+			emp.DesignationID,
+			emp.LevelID,
+			emp.ManagerID,
+			emp.RoleID,
+			emp.Status,
+			emp.EmploymentType,
+			emp.HireDate,
+			emp.DateOfBirth,
+			emp.Gender,
+			emp.Address,
+			emp.EmergencyContactName,
+			emp.EmergencyContactPhone,
+			emp.ProfileImageURL,
+		)
+
+		paramNum += 21
+	}
+
+	query := fmt.Sprintf(`
+		INSERT INTO employees (
+			company_id, email, password_hash, phone, first_name, last_name,
+			employee_code, department_id, designation_id, level_id, manager_id,
+			role_id, status, employment_type, hire_date, date_of_birth, gender,
+			address, emergency_contact_name, emergency_contact_phone, profile_image_url
+		)
+		VALUES %s
+		RETURNING 
+			id, company_id, email, password_hash, phone, first_name, last_name,
+			employee_code, department_id, designation_id, level_id, manager_id,
+			role_id, status, employment_type, hire_date, termination_date,
+			date_of_birth, gender, address, emergency_contact_name,
+			emergency_contact_phone, profile_image_url, last_login_at,
+			created_at, updated_at
+	`, strings.Join(placeholders, ","))
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert employees: %w", err)
+	}
+	defer rows.Close()
+
+	createdEmployees := make([]*models.Employee, 0, len(employees))
+
+	for rows.Next() {
+		var emp models.Employee
+		if err := rows.Scan(
+			&emp.ID,
+			&emp.CompanyID,
+			&emp.Email,
+			&emp.PasswordHash,
+			&emp.Phone,
+			&emp.FirstName,
+			&emp.LastName,
+			&emp.EmployeeCode,
+			&emp.DepartmentID,
+			&emp.DesignationID,
+			&emp.LevelID,
+			&emp.ManagerID,
+			&emp.RoleID,
+			&emp.Status,
+			&emp.EmploymentType,
+			&emp.HireDate,
+			&emp.TerminationDate,
+			&emp.DateOfBirth,
+			&emp.Gender,
+			&emp.Address,
+			&emp.EmergencyContactName,
+			&emp.EmergencyContactPhone,
+			&emp.ProfileImageURL,
+			&emp.LastLoginAt,
+			&emp.CreatedAt,
+			&emp.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan employee: %w", err)
+		}
+		createdEmployees = append(createdEmployees, &emp)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error reading rows: %w", err)
+	}
+
+	// Commit transaction
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return createdEmployees, nil
 }
