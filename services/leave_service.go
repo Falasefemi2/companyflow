@@ -26,7 +26,7 @@ type ILeaveService interface {
 	GetLeaveRequest(ctx context.Context, requestID uuid.UUID) (*models.LeaveRequest, error)
 	GetLeaveRequests(ctx context.Context, listRequest *dto.LeaveRequestListRequest) (*utils.PaginatedResponse[*models.LeaveRequest], error)
 	ApproveLeaveRequest(ctx context.Context, requestID uuid.UUID, approvedByID uuid.UUID) (*models.LeaveRequest, error)
-	RejectLeaveRequest(ctx context.Context, requestID uuid.UUID, req *dto.RejectLeaveRequestRequest) (*models.LeaveRequest, error)
+	RejectLeaveRequest(ctx context.Context, requestID uuid.UUID, rejectedByID uuid.UUID, req *dto.RejectLeaveRequestRequest) (*models.LeaveRequest, error)
 	WithdrawLeaveRequest(ctx context.Context, requestID uuid.UUID, employeeID uuid.UUID) (*models.LeaveRequest, error)
 
 	// Leave Balance operations
@@ -277,9 +277,17 @@ func (s *LeaveService) ApproveLeaveRequest(ctx context.Context, requestID uuid.U
 	return result, nil
 }
 
-func (s *LeaveService) RejectLeaveRequest(ctx context.Context, requestID uuid.UUID, req *dto.RejectLeaveRequestRequest) (*models.LeaveRequest, error) {
+func (s *LeaveService) RejectLeaveRequest(
+	ctx context.Context,
+	requestID uuid.UUID,
+	rejectedByID uuid.UUID,
+	req *dto.RejectLeaveRequestRequest,
+) (*models.LeaveRequest, error) {
 	if requestID == uuid.Nil {
 		return nil, errors.New("request ID cannot be empty")
+	}
+	if rejectedByID == uuid.Nil {
+		return nil, errors.New("rejector ID cannot be empty")
 	}
 
 	if err := s.validateRejectLeaveRequest(req); err != nil {
@@ -295,7 +303,7 @@ func (s *LeaveService) RejectLeaveRequest(ctx context.Context, requestID uuid.UU
 		return nil, fmt.Errorf("can only reject pending requests. Current status: %s", request.Status)
 	}
 
-	result, err := s.repo.RejectLeaveRequest(ctx, requestID, req.RejectionReason)
+	result, err := s.repo.RejectLeaveRequest(ctx, requestID, req.RejectionReason, rejectedByID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reject leave request: %w", err)
 	}

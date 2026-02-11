@@ -476,7 +476,7 @@ func (h *LeaveHandler) ApproveLeaveRequest(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} utils.APIResponse
 // @Router /leave-requests/{id}/reject [post]
 func (h *LeaveHandler) RejectLeaveRequest(w http.ResponseWriter, r *http.Request) {
-	_, err := authorizeToken(r, roleSuperAdmin, roleHRManager, roleManager)
+	claims, err := authorizeToken(r, roleSuperAdmin, roleHRManager, roleManager)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
@@ -495,7 +495,13 @@ func (h *LeaveHandler) RejectLeaveRequest(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	result, err := h.leaveService.RejectLeaveRequest(r.Context(), requestID, &req)
+	rejectorID, err := uuid.Parse(claims.EmployeeID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "invalid employee id in token")
+		return
+	}
+
+	result, err := h.leaveService.RejectLeaveRequest(r.Context(), requestID, rejectorID, &req)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
